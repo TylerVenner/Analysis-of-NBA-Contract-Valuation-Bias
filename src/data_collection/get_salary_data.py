@@ -19,7 +19,7 @@ TEAM_SLUGS = [
 SEASON = "2024-25"
 SEASON_START_YEAR = SEASON.split('-')[0]
 
-PROJECT_ROOT = Path().resolve().parent.parent
+PROJECT_ROOT = Path().resolve()
 RAW_SALARY_FILE = PROJECT_ROOT / "data" / "raw" / "raw_player_salaries.csv"
 
 HEADERS = {
