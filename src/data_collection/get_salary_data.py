@@ -105,6 +105,20 @@ def clean_salary_dataframe(raw_df: pd.DataFrame, player_col: str = 'Player_Name'
     print(f"Cleaned DataFrame: {len(cleaned_df)} unique players.")
     return cleaned_df
 
+def remove_two_way_players(cleaned_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Removes two-way contract players from dataset.
+    """
+    if 'Salary' not in cleaned_df.columns:
+        raise KeyError("Expected salary column not found.")
+    
+    filtered_df = cleaned_df[~cleaned_df['Salary'].str.contains('two-way', case=False)].copy()
+
+    removed_count = len(cleaned_df) - len(filtered_df)
+    print(f"Removed {removed_count} two-way contract players. {len(filtered_df)} unique players remaining.")
+
+    return filtered_df
+
 def save_dataframe_to_csv(df: pd.DataFrame, filepath: Path):
     """
     Saves the given DataFrame to a CSV file.
@@ -123,11 +137,13 @@ def main():
         return
 
     try:
-        final_df = clean_salary_dataframe(combined_df)
+        cleaned_df = clean_salary_dataframe(combined_df)
     except KeyError as e:
         print(f"Column mismatch error: {e}")
         print("Inspect combined_df columns manually.")
         return
+    
+    final_df = remove_two_way_players(cleaned_df)
 
     save_dataframe_to_csv(final_df, RAW_SALARY_FILE)
     print("All done!")
