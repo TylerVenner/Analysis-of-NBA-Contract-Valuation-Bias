@@ -44,7 +44,7 @@ def clean_salary_cap_dataframe(raw_df: pd.DataFrame, rank_col: str = 'rank', tea
     Cleans the salary cap data.
     - Rename columns
     - Standardize team name
-    - Removes unneeded rows and columns
+    - Remove unneeded rows and columns
     """
     df = raw_df.copy()
     
