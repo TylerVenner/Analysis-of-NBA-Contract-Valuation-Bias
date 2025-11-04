@@ -29,6 +29,9 @@ RAW_CONTEXT_FILE = RAW_DATA_PATH / "raw_player_context.csv"
 # Module 2 (get_salary_data.py) Output
 RAW_SALARY_FILE = RAW_DATA_PATH / "raw_player_salaries.csv"
 
+# get_salary_cap.py output
+RAW_CAP_FILE = RAW_DATA_PATH / "raw_salary_caps.csv"
+
 # Module 3 (merge_data.py) Output
 # This is also the main INPUT for all future modules (EDA, Clustering, etc.)
 PROCESSED_MERGED_FILE = PROCESSED_DATA_PATH / "merged_player_data_v1.csv"
