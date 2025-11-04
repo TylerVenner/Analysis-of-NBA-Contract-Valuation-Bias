@@ -8,17 +8,17 @@ import unicodedata
 # --- File Configuration ---
 
 # Source files (Originals)
-STATS_FILE = 'Player_Performance_raw.csv'
-CONTEXT_FILE = 'raw_player_context.csv'
-SALARY_FILE = 'raw_player_salaries.csv'
+STATS_FILE = 'Player_Performance_raw.csv' # has team id and player id
+CONTEXT_FILE = 'raw_player_context.csv' # has player id
+SALARY_FILE = 'raw_player_salaries.csv' # has player name
 
 # Manually-edited files (Your team needs to create these)
 # IMPORTANT: Save your team's edited files with these EXACT names
-CAPS_FILE = 'caps_with_id.csv'
-OWNERS_FILE = 'owners_with_id.csv'
+CAPS_FILE = 'raw_player_caps.csv' # has abbreviated team names (currently adding team id)
+OWNERS_FILE = 'Owner Net Worth in Billions .csv' # has team names (currently adding team id)
 
 # Final output file
-OUTPUT_FILE = 'master_dataset_v2.csv'
+OUTPUT_FILE = 'master_dataset_v1.csv'
 
 # --- End Configuration ---
 
