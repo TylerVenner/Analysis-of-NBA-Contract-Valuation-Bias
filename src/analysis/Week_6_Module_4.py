@@ -1,144 +1,66 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 12,
-   "id": "1cb12efb-0da5-48cc-9f82-59d55274e8b1",
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Requirement already satisfied: statsmodels in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (0.14.5)\n",
-      "Requirement already satisfied: numpy<3,>=1.22.3 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from statsmodels) (2.2.0)\n",
-      "Requirement already satisfied: scipy!=1.9.2,>=1.8 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from statsmodels) (1.16.1)\n",
-      "Requirement already satisfied: pandas!=2.1.0,>=1.4 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from statsmodels) (2.2.3)\n",
-      "Requirement already satisfied: patsy>=0.5.6 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from statsmodels) (1.0.2)\n",
-      "Requirement already satisfied: packaging>=21.3 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from statsmodels) (24.2)\n",
-      "Requirement already satisfied: python-dateutil>=2.8.2 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from pandas!=2.1.0,>=1.4->statsmodels) (2.9.0.post0)\n",
-      "Requirement already satisfied: pytz>=2020.1 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from pandas!=2.1.0,>=1.4->statsmodels) (2024.1)\n",
-      "Requirement already satisfied: tzdata>=2022.7 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from pandas!=2.1.0,>=1.4->statsmodels) (2025.2)\n",
-      "Requirement already satisfied: six>=1.5 in /opt/anaconda3/envs/pandasplayground/lib/python3.12/site-packages (from python-dateutil>=2.8.2->pandas!=2.1.0,>=1.4->statsmodels) (1.17.0)\n",
-      "                            OLS Regression Results                            \n",
-      "==============================================================================\n",
-      "Dep. Variable:                  eps_Y   R-squared:                       0.130\n",
-      "Model:                            OLS   Adj. R-squared:                  0.113\n",
-      "Method:                 Least Squares   F-statistic:                     7.493\n",
-      "Date:                Sun, 09 Nov 2025   Prob (F-statistic):           2.50e-09\n",
-      "Time:                        14:54:48   Log-Likelihood:                -592.28\n",
-      "No. Observations:                 409   AIC:                             1203.\n",
-      "Df Residuals:                     400   BIC:                             1239.\n",
-      "Df Model:                           8                                         \n",
-      "Covariance Type:            nonrobust                                         \n",
-      "=======================================================================================\n",
-      "                          coef    std err          t      P>|t|      [0.025      0.975]\n",
-      "---------------------------------------------------------------------------------------\n",
-      "const                  -0.0171      0.052     -0.332      0.740      -0.118       0.084\n",
-      "DRAFT_NUMBER           -0.3662      0.056     -6.541      0.000      -0.476      -0.256\n",
-      "active_cap              0.1103      0.100      1.100      0.272      -0.087       0.307\n",
-      "avg_team_age           -0.2456      0.092     -2.671      0.008      -0.426      -0.065\n",
-      "dead_cap               -0.0112      0.067     -0.168      0.866      -0.142       0.120\n",
-      "OWNER_NET_WORTH_B       0.0571      0.075      0.760      0.448      -0.091       0.205\n",
-      "Capacity                0.0785      0.056      1.408      0.160      -0.031       0.188\n",
-      "STADIUM_YEAR_OPENED     0.0733      0.088      0.833      0.405      -0.100       0.246\n",
-      "STADIUM_COST           -0.0468      0.104     -0.452      0.651      -0.250       0.157\n",
-      "==============================================================================\n",
-      "Omnibus:                       96.321   Durbin-Watson:                   1.740\n",
-      "Prob(Omnibus):                  0.000   Jarque-Bera (JB):              252.013\n",
-      "Skew:                          -1.135   Prob(JB):                     1.89e-55\n",
-      "Kurtosis:                       6.104   Cond. No.                         4.16\n",
-      "==============================================================================\n",
-      "\n",
-      "Notes:\n",
-      "[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.\n"
-     ]
-    }
-   ],
-   "source": [
-    "!pip install statsmodels\n",
-    "import pandas as pd\n",
-    "import numpy as np\n",
-    "from sklearn.model_selection import KFold\n",
-    "from sklearn.linear_model import LinearRegression\n",
-    "from sklearn.preprocessing import StandardScaler\n",
-    "import statsmodels.api as sm\n",
-    "\n",
-    "# Load data\n",
-    "df = pd.read_csv(\"master_dataset_cleaned.csv\")\n",
-    "df = df.replace(\"Undrafted\", 61)\n",
-    "\n",
-    "# --- Define variables ---\n",
-    "Y = np.log(df[\"Salary\"])  # log-transform for stability\n",
-    "X_cols = [\"OFF_RATING\", \"DEF_RATING\", \"NET_RATING\", \"AST_PCT\", \"AST_TO\", \"AST_RATIO\", \"OREB_PCT\", \"REB_PCT\", \"DREB_PCT\", \"TM_TOV_PCT\", \"EFG_PCT\",  \n",
-    "          \"TS_PCT\", \"PACE\", \"PIE\", \"USG_PCT\", \"POSS\", \"FGM_PG\", \"FGA_PG\" ]\n",
-    "Z_cols = [\"DRAFT_NUMBER\", \"active_cap\", \"avg_team_age\", \"dead_cap\", \"OWNER_NET_WORTH_B\", \"Capacity\", \"STADIUM_YEAR_OPENED\", \"STADIUM_COST\"]\n",
-    "\n",
-    "X = df[X_cols]\n",
-    "Z = df[Z_cols]\n",
-    "\n",
-    "# Standardize X and Z\n",
-    "scaler = StandardScaler()\n",
-    "X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)\n",
-    "Z_scaled = pd.DataFrame(scaler.fit_transform(Z), columns=Z.columns)\n",
-    "\n",
-    "def generate_dml_residuals(X, Y, Z, k_folds=5):\n",
-    "    kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)\n",
-    "    y_resid = np.zeros(len(Y))\n",
-    "    Z_resid = np.zeros_like(Z)\n",
-    "\n",
-    "    for train_idx, test_idx in kf.split(X):\n",
-    "        # Train models\n",
-    "        f_model = LinearRegression().fit(X.iloc[train_idx], Y.iloc[train_idx])\n",
-    "        h_models = {col: LinearRegression().fit(X.iloc[train_idx], Z[col].iloc[train_idx]) for col in Z.columns}\n",
-    "\n",
-    "        # Predict and get residuals\n",
-    "        y_pred = f_model.predict(X.iloc[test_idx])\n",
-    "        y_resid[test_idx] = Y.iloc[test_idx] - y_pred\n",
-    "        \n",
-    "        for col in Z.columns:\n",
-    "            z_pred = h_models[col].predict(X.iloc[test_idx])\n",
-    "            Z_resid[test_idx, list(Z.columns).index(col)] = Z[col].iloc[test_idx] - z_pred\n",
-    "\n",
-    "    return pd.Series(y_resid, name=\"eps_Y\"), pd.DataFrame(Z_resid, columns=Z.columns)\n",
-    "    \n",
-    "resid_Y, resid_Z = generate_dml_residuals(X_scaled, Y, Z_scaled)\n",
-    "# Add constant term\n",
-    "X_bias = sm.add_constant(resid_Z)\n",
-    "final_model = sm.OLS(resid_Y, X_bias).fit()\n",
-    "\n",
-    "print(final_model.summary())\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1ae18f5e-218e-40da-8c38-fb66e16229f9",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python [conda env:base] *",
-   "language": "python",
-   "name": "conda-base-py"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.12.7"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[12]:
+
+
+get_ipython().system('pip install statsmodels')
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import KFold
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
+import statsmodels.api as sm
+
+# Load data
+df = pd.read_csv("master_dataset_cleaned.csv")
+df = df.replace("Undrafted", 61)
+
+# --- Define variables ---
+Y = np.log(df["Salary"])  # log-transform for stability
+X_cols = ["OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", "AST_RATIO", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", "EFG_PCT",  
+          "TS_PCT", "PACE", "PIE", "USG_PCT", "POSS", "FGM_PG", "FGA_PG" ]
+Z_cols = ["DRAFT_NUMBER", "active_cap", "avg_team_age", "dead_cap", "OWNER_NET_WORTH_B", "Capacity", "STADIUM_YEAR_OPENED", "STADIUM_COST"]
+
+X = df[X_cols]
+Z = df[Z_cols]
+
+# Standardize X and Z
+scaler = StandardScaler()
+X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+Z_scaled = pd.DataFrame(scaler.fit_transform(Z), columns=Z.columns)
+
+def generate_dml_residuals(X, Y, Z, k_folds=5):
+    kf = KFold(n_splits=k_folds, shuffle=True, random_state=42)
+    y_resid = np.zeros(len(Y))
+    Z_resid = np.zeros_like(Z)
+
+    for train_idx, test_idx in kf.split(X):
+        # Train models
+        f_model = LinearRegression().fit(X.iloc[train_idx], Y.iloc[train_idx])
+        h_models = {col: LinearRegression().fit(X.iloc[train_idx], Z[col].iloc[train_idx]) for col in Z.columns}
+
+        # Predict and get residuals
+        y_pred = f_model.predict(X.iloc[test_idx])
+        y_resid[test_idx] = Y.iloc[test_idx] - y_pred
+
+        for col in Z.columns:
+            z_pred = h_models[col].predict(X.iloc[test_idx])
+            Z_resid[test_idx, list(Z.columns).index(col)] = Z[col].iloc[test_idx] - z_pred
+
+    return pd.Series(y_resid, name="eps_Y"), pd.DataFrame(Z_resid, columns=Z.columns)
+
+resid_Y, resid_Z = generate_dml_residuals(X_scaled, Y, Z_scaled)
+# Add constant term
+X_bias = sm.add_constant(resid_Z)
+final_model = sm.OLS(resid_Y, X_bias).fit()
+
+print(final_model.summary())
+
+
+
+# In[ ]:
+
+
+
+
