@@ -1,7 +1,6 @@
 import pandas as pd
 
 
-df = pd.read_csv('/Users/leonelgaribay/Downloads/master_dataset_cleaned.csv')
 
 #print(df.head())
 #print(df.columns)
@@ -52,8 +51,7 @@ def train_f_model(df):
 
 
 
-df = pd.read_csv('/Users/leonelgaribay/Downloads/master_dataset_cleaned.csv')
-model, r2, mse = train_f_model(df)
+
 
 
 
