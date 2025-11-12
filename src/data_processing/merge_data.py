@@ -8,8 +8,7 @@ def main():
     
     df_stats = pd.read_csv(RAW_STATS_FILE)
     df_context = pd.read_csv(RAW_CONTEXT_FILE)
-    df_salary = pd.read_csv(RAW_SALARY_FILE)
-   
+    df_salary = pd.read_csv(RAW_SALARY_FILE) 
 
     print("Merging stats and context (on PLAYER_ID)...")
     df_api = pd.merge(df_stats, df_context, on="PLAYER_ID", how="inner")
@@ -33,7 +32,7 @@ def main():
         .astype(float)
     )
 
-    # --- Calculate AGE ---
+    # --- Calculate AGE with birth year---
     print("Calculating player ages...")
     df_merged["BIRTHDATE"] = pd.to_datetime(df_merged["BIRTHDATE"], errors="coerce")
     df_merged["AGE"] = df_merged["BIRTHDATE"].apply(lambda x: 2024 - x.year if pd.notnull(x) else None)
@@ -42,13 +41,13 @@ def main():
     print("\nChecking for duplicate merge keys...")
     dupes = df_merged[df_merged.duplicated(subset=["merge_key"], keep=False)]
     if not dupes.empty:
-        print(f"⚠️ Found {len(dupes)} duplicate player names — please review:")
+        print(f" Found {len(dupes)} duplicate player names — please review:")
         print(dupes[["PLAYER_NAME", "merge_key"]].head(10))
 
     # --- Log missing salaries ---
     print("\nChecking for players missing salary data...")
     missing_salaries = df_merged[df_merged["Salary"].isna()]
-    print(f"⚠️ Players missing salary data: {len(missing_salaries)}")
+    print(f"Players missing salary data: {len(missing_salaries)}")
     if not missing_salaries.empty:
         print(missing_salaries[["PLAYER_NAME", "merge_key"]].head(10))
 
@@ -56,7 +55,7 @@ def main():
     print(f"\nSaving cleaned dataset to {PROCESSED_MERGED_FILE}")
     Path(PROCESSED_MERGED_FILE).parent.mkdir(parents=True, exist_ok=True)
     df_merged.to_csv(PROCESSED_MERGED_FILE, index=False)
-    print("✅ Merge and cleaning complete.")
+    print("Merge and cleaning complete.")
 
 if __name__ == "__main__":
     main()
