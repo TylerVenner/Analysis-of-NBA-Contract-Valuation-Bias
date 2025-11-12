@@ -31,7 +31,8 @@ def run_final_ols(residuals_Y: pd.Series,
     final_ols_model = sm.OLS(residuals_Y, Z_with_const)
     
     # 3. Fit the model
-    final_ols_results = final_ols_model.fit()
+    # We use .fit(cov_type='HC3') to get "robust" standard errors.
+    final_ols_results = final_ols_model.fit(cov_type='HC3')
     
     print("Final OLS regression complete.")
     
