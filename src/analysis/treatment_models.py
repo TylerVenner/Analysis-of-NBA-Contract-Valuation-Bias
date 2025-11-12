@@ -15,19 +15,13 @@ PROJECT_ROOT = Path().resolve().parent.parent
 
 numeric_contextual_vars = [
     'age', 'draft_number', 'salary', 'followers',
-    'owner_net_worth_billions', 'total_cap_used', 'capacity', 'construction_cost']
+    'owner_net_worth_b', 'total_cap_used', 'capacity', 'stadium_cost']
 
 categorical_contextual_vars = ['country', 'draft_round']
 
 performance_vars = [
-    'e_off_rating','off_rating','sp_work_off_rating','e_def_rating','def_rating','sp_work_def_rating',
-    'e_net_rating','net_rating','sp_work_net_rating','ast_pct','ast_to','ast_ratio','oreb_pct','dreb_pct',
-    'reb_pct','tm_tov_pct','e_tov_pct','efg_pct','ts_pct','usg_pct','e_usg_pct','e_pace','pace','pace_per40',
-    'sp_work_pace','pie','poss','fgm_pg','fga_pg','e_off_rating_rank','off_rating_rank','sp_work_off_rating_rank',
-    'e_def_rating_rank','def_rating_rank','sp_work_def_rating_rank','e_net_rating_rank','net_rating_rank',
-    'sp_work_net_rating_rank','ast_pct_rank','ast_to_rank','ast_ratio_rank','oreb_pct_rank','dreb_pct_rank',
-    'reb_pct_rank','tm_tov_pct_rank','e_tov_pct_rank','efg_pct_rank','ts_pct_rank','usg_pct_rank','e_usg_pct_rank',
-    'e_pace_rank','pace_rank','sp_work_pace_rank','pie_rank','fgm_pg_rank','fga_pg_rank']
+    'off_rating','def_rating','net_rating','ast_pct','ast_to','ast_ratio','oreb_pct','dreb_pct',
+    'reb_pct','tm_tov_pct','efg_pct','ts_pct','usg_pct','pace','pace_per40','pie','poss','fgm_pg','fga_pg']
 
 # DATA CLEANING
 def clean_colname(name: str) -> str:
@@ -41,7 +35,7 @@ def clean_colname(name: str) -> str:
 def compute_age(birthdate):
     """Convert birthdate string to age in years."""
     try:
-        return (datetime.now() - pd.to_datetime(birthdate)).days / 365.25
+        return (datetime.now() - pd.to_datetime(birthdate)).days / 365
     except:
         return np.nan
 
@@ -56,7 +50,7 @@ def remove_outliers_iqr(df: pd.DataFrame, column: str, lower_q=0.01, upper_q=0.9
     return df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
 
 # FEATURE REDUCTION
-def reduce_vif(X: pd.DataFrame, vif_threshold: float = 5.0) -> List[str]:
+def reduce_vif(X: pd.DataFrame, vif_threshold: float) -> List[str]:
     """Iteratively remove variables with VIF > threshold."""
     variables = X.columns.tolist()
     while True:
@@ -136,9 +130,9 @@ def train_h_models(X_df: pd.DataFrame, Z_df: pd.DataFrame) -> Dict[str, Any]:
     print("h_models training complete.")
     return models_h
 
-def h_models_pipeline(
+def get_h_models(
     csv_path: str,
-    vif_threshold: float = 5.0) -> Dict[str, Any]:
+    vif_threshold: float = 10.0) -> Dict[str, Any]:
     """
     Full pipeline from raw CSV → cleaned data → VIF reduction → trained h_models.
     """
@@ -175,7 +169,7 @@ def h_models_pipeline(
     return h_models
 
 def main():
-    h_models = h_models_pipeline(
+    h_models = get_h_models(
         csv_path = PROJECT_ROOT / "data" / "processed" / "master_dataset_cleaned.csv"
     )
     print(h_models)
