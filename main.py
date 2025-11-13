@@ -7,8 +7,8 @@ import sys
 
 from src.analysis.train_f_model import train_f_model
 from src.analysis.treatment_models import train_h_models
-from src.analysis.w6module3 import generate_dml_residuals
-from src.analysis.Week_6_Module_4 import run_final_ols
+from src.analysis.generate_dml_residuals import generate_dml_residuals
+from src.analysis.run_final_ols import run_final_ols
 
 # --- Configuration ---
 DATA_PATH = "data/processed/master_dataset_cleaned.csv"
