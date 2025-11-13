@@ -1,47 +1,41 @@
 import streamlit as st
 import pandas as pd
+# from src.analysis.final_ols import run_final_ols
+# from src.analysis.dml_residuals import generate_dml_residuals
+# (Import your functions)
 
-# Set the page configuration
 st.set_page_config(
-    page_title="NBA Contract Analysis",
-    page_icon="🏀",
-    layout="wide",
-    initial_sidebar_state="expanded",
+    page_title="something else",
+    page_icon="⚖️",
+    layout="wide"
 )
 
-# --- Main Page Content ---
-
-st.title("🏀 Analysis of NBA Contract Valuation")
-st.subheader("STA 160 Capstone Project - Group 5")
+st.title("an Page")
+st.subheader("Final DML Results & Interpretation")
 
 st.markdown("""
-Welcome to our project! This app presents our analysis of potential biases in NBA contract valuations.
-We use a Double Machine Learning (DML) model to isolate the effect of non-performance factors (like draft number, owner net worth, etc.) on player salaries, after accounting for on-court performance.
+This page is the perfect place to show the **final OLS results** (from `run_final_ols`) and interpret what the coefficients on the bias factors mean.
 
-### How to Use This App
-Use the sidebar on the left to navigate between the different sections of our analysis:
-- **Home:** You are here.
-- **Data Overview:** (Example Page) A look at the raw data we collected.
-- **Model Results:** (Example Page) The final output from our DML model.
-- **[Teammate Pages]:** Explorations and specific analyses from each team member.
-
----
+### Example: Running the Model
+```python
+@st.cache_data
+def load_and_run_pipeline():
+    # This function would call your full pipeline
+    # (load data, generate_dml_residuals, run_final_ols)
+    # and return the final results object.
+    # We use @st.cache_data so it only runs once.
+    st.info("Running DML Pipeline... (This may take a moment)")
+    # results = run_full_pipeline_function()
+    # return results
+    
+# results = load_and_run_pipeline()
+# st.text(results.summary())
+```
 """)
 
-st.header("Project Overview")
-st.info("Our goal is to determine if a player's salary (Y) is influenced by contextual 'bias' factors (Z) even after controlling for their performance (X).")
+# Placeholder for content
+st.header("Final Model Results")
+st.info("Coming soon: Displaying the final OLS summary table (`epsilon_Y ~ epsilon_Z`).")
 
-st.markdown("""
-### Methodology
-1.  **Model 1 (Outcome):** We predict Salary based on Performance (`Y ~ X`).
-2.  **Model 2 (Bias):** We predict each Bias Factor based on Performance (`Z ~ X`).
-3.  **DML:** We get the residuals (the unexplained parts) from both models.
-4.  **Final OLS:** We run a final regression on these residuals (`Residual_Y ~ Residual_Z`). The coefficients from this final model show us the "debiased" effect of the contextual factors on salary.
-""")
-
-st.image("https://placehold.co/1200x400/000000/FFFFFF?text=High-Level+Model+Architecture+Diagram",
-         caption="A simplified view of our Double Machine Learning (DML) pipeline.",
-         use_column_width=True)
-
-st.sidebar.header("About")
-st.sidebar.info("This app was created by Alberto, Gary, Leo, Macy, and Tyler for STA 160.")
+st.header("Interpretation")
+st.write("Here we will discuss the meaning of the coefficients, their p-values, and the overall conclusion about bias in NBA contracts.")
