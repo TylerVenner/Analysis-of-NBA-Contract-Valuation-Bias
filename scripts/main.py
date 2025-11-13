@@ -5,13 +5,15 @@ import os
 from pathlib import Path
 import sys
 
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from src.analysis.train_f_model import train_f_model
 from src.analysis.treatment_models import train_h_models
 from src.analysis.generate_dml_residuals import generate_dml_residuals
 from src.analysis.run_final_ols import run_final_ols
 
 # --- Configuration ---
-DATA_PATH = "data/processed/master_dataset_cleaned.csv"
+DATA_PATH = "../data/processed/master_dataset_cleaned.csv"
 
 # Y (Outcome)
 Y_COL = "Salary"
