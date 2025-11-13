@@ -15,7 +15,7 @@ st.title("🏀 Analysis of NBA Contract Valuation")
 st.subheader("STA 160 Capstone Project - Group 5")
 
 st.markdown("""
-Welcome to our project! This app presents our analysis of potential biases in NBA contract valuations.
+Welcome to our SUPER COOL project! This app presents our analysis of potential biases in NBA contract valuations.
 We use a Double Machine Learning (DML) model to isolate the effect of non-performance factors (like draft number, owner net worth, etc.) on player salaries, after accounting for on-court performance.
 
 ### How to Use This App
