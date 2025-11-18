@@ -27,7 +27,7 @@ def run_dml_pipeline():
     st.info("Running DML Pipeline... (This may take a moment)")
 
     # Load data
-    df = pd.read_csv("master_dataset_cleaned.csv")
+    df = pd.read_csv("data/processed/master_dataset_cleaned.csv")
     df = df.replace("Undrafted", 61)
     df["DRAFT_NUMBER"] = pd.to_numeric(df["DRAFT_NUMBER"])
 
