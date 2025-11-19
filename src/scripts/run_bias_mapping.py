@@ -5,28 +5,24 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime
 
-# --- Add Project Root to Path ---
 # This ensures we can import from 'src' regardless of where the script is run
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 
-# --- Imports from Existing DML Pipeline ---
 from src.analysis.train_f_model import train_f_model
 from src.analysis.treatment_models import train_h_models
 from src.analysis.generate_dml_residuals import generate_dml_residuals
 from src.analysis.run_final_ols import run_final_ols
 
-# --- Imports from New PULS Integration ---
-from src.puls_integration.attribution import BiasAttributor
-from src.puls_integration.visualizer import plot_bias_map_3d
-from src.puls_core.fitters import BiasMapFitter
+from src.integration.attribution import BiasAttributor
+from src.integration.visualizer import plot_bias_map_3d
+from src.core.fitters import BiasMapFitter
 
-# --- Configuration ---
 # Paths
 DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_cleaned.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
-# Feature Config (Matching your main.py)
+# Feature Config (Matching main.py)
 Y_COL = "Salary"
 
 X_COLS = [
@@ -50,7 +46,7 @@ Z_COLS = [
     "is_USA"
 ]
 
-# Helper for preprocessing (Same as your main.py)
+# Helper for preprocessing (Same as main.py)
 def preprocess_data(df):
     """Replicates the preprocessing logic from your original main.py"""
     if "DRAFT_NUMBER" in df.columns:
@@ -173,7 +169,7 @@ def main():
         attribution_matrix=L_matrix,
         bias_labels=L_matrix.columns.tolist(),
         player_metadata=player_meta,
-        title="Bias Attribution Map (DML-PULS Fusion)",
+        title="Bias Attribution Map (DML Bias Structures)",
         output_path=plot_path
     )
     
