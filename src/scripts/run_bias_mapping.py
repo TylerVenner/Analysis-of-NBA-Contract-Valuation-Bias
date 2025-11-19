@@ -5,7 +5,6 @@ import numpy as np
 from pathlib import Path
 from datetime import datetime
 
-# This ensures we can import from 'src' regardless of where the script is run
 project_root = Path(__file__).resolve().parents[2]
 sys.path.append(str(project_root))
 
@@ -32,7 +31,7 @@ X_COLS = [
     "POSS", "FGM_PG", "FGA_PG"
 ]
 
-# Bias Factors (The "Products" of our map)
+# Bias Factors 
 Z_COLS = [
     "DRAFT_NUMBER", 
     "active_cap", 
@@ -46,7 +45,7 @@ Z_COLS = [
     "is_USA"
 ]
 
-# Helper for preprocessing (Same as main.py)
+# Helper for preprocessing (Same main.py)
 def preprocess_data(df):
     """Replicates the preprocessing logic from your original main.py"""
     if "DRAFT_NUMBER" in df.columns:
@@ -126,9 +125,8 @@ def main():
     attributor = BiasAttributor(gamma_coefficients, residuals_Z)
     
     # Get the L matrix (L_ij = gamma_j * epsilon_Z_ij)
-    # We drop the 'const' from gamma if it exists, as it's not a factor
-    if 'const' in gamma_coefficients:
-        attributor.gamma = attributor.gamma.drop('const')
+    # BiasAttributor automatically aligns gamma with residuals_Z columns.
+    # Since residuals_Z does not have 'const', it is automatically dropped inside the class.
         
     L_matrix = attributor.get_attribution_matrix(normalize=True)
     print(f"Matrix Shape: {L_matrix.shape} (Players x Bias Factors)")
@@ -169,7 +167,7 @@ def main():
         attribution_matrix=L_matrix,
         bias_labels=L_matrix.columns.tolist(),
         player_metadata=player_meta,
-        title="Bias Attribution Map (DML Bias Structures)",
+        title="Bias Attribution Map (DML-PULS Fusion)",
         output_path=plot_path
     )
     
