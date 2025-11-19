@@ -51,10 +51,8 @@ def compute_age(birthdate):
     except:
         return np.nan
 
-def main():
-    """
-    Main function to run the entire DML pipeline.
-    """
+def run_pipeline():
+    """Run the DML pipeline and return cleaned data, residuals, and OLS results."""
     # --- This is the better way ---
     # Create local, mutable copies of the global constants.
     # This avoids all 'global' keywords and UnboundLocalErrors.
@@ -158,6 +156,13 @@ def main():
 
     # --- 6. Run Final OLS (Module 4) ---
     final_ols_results = run_final_ols(residuals_Y, residuals_Z)
+
+    return df_clean, residuals_Y, residuals_Z, final_ols_results
+
+def main():
+    """Main function to run the entire DML pipeline independently."""
+    print("Starting DML Pipeline (Refined Z-Set)...")
+    df_clean, residuals_Y, residuals_Z, final_ols_results = run_pipeline()
 
     # --- 7. Show Final Results ---
     print("\n" + "="*80)
