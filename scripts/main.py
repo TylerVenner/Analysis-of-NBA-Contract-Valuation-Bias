@@ -14,7 +14,8 @@ from src.analysis.generate_dml_residuals import generate_dml_residuals
 from src.analysis.run_final_ols import run_final_ols
 
 # --- Configuration ---
-DATA_PATH = "../data/processed/master_dataset_cleaned.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_PATH = PROJECT_ROOT / "data" / "processed" / "master_dataset_cleaned.csv"
 
 # Y (Outcome)
 Y_COL = "Salary"
