@@ -79,6 +79,7 @@ def main():
     print("\n[1/5] Loading Data...")
     try:
         df_raw = pd.read_csv(DATA_PATH)
+        df_raw = df_raw.set_index('PLAYER_NAME')
     except FileNotFoundError:
         print(f"Error: Could not find data at {DATA_PATH}")
         return
