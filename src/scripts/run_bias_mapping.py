@@ -18,36 +18,25 @@ from src.integration.visualizer import plot_bias_map_3d
 from src.core.fitters import BiasMapFitter
 
 # Paths
-DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_cleaned.csv")
+DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_with_contracts.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
 # Feature Config (Matching main.py)
 Y_COL = "Salary"
-
 X_COLS = [
     "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
     "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
     "POSS", "FGM_PG", "FGA_PG"
 ]
-
-# Bias Factors 
 Z_COLS = [
-    "DRAFT_NUMBER", 
-    "active_cap", 
-    "dead_cap", 
-    "OWNER_NET_WORTH_B", 
-    "Capacity", 
-    "STADIUM_YEAR_OPENED",
-    "STADIUM_COST",
-    "Followers",
-    "Age",
-    "is_USA"
+    "DRAFT_NUMBER", "active_cap", "dead_cap", "OWNER_NET_WORTH_B", 
+    "Capacity", "STADIUM_YEAR_OPENED", "STADIUM_COST", "Followers", 
+    "Age", "is_USA"
 ]
 
-# Helper for preprocessing (Same main.py)
 def preprocess_data(df):
-    """Replicates the preprocessing logic from your original main.py"""
+    """Clean and prepare data, ensuring Contract_Type is preserved."""
     if "DRAFT_NUMBER" in df.columns:
         df["DRAFT_NUMBER"] = df["DRAFT_NUMBER"].replace("Undrafted", 61)
         df["DRAFT_NUMBER"] = pd.to_numeric(df["DRAFT_NUMBER"], errors='coerce')
@@ -63,28 +52,30 @@ def preprocess_data(df):
     if "COUNTRY" in df.columns:
         df["is_USA"] = np.where(df["COUNTRY"] == "USA", 1, 0)
         
-    # Handle missing columns gracefully (e.g. AST_RATING vs AST_RATIO)
     x_cols_final = X_COLS.copy()
     if "AST_RATING" not in df.columns and "AST_RATIO" in df.columns:
         print("Info: Swapping AST_RATING for AST_RATIO")
         x_cols_final = [c if c != "AST_RATING" else "AST_RATIO" for c in x_cols_final]
-        
-    # Filter complete cases
-    all_cols = [Y_COL] + x_cols_final + Z_COLS
+    
+    # Ensure Contract_Type exists, default to 'Free_Market' if missing (for safety)
+    if "Contract_Type" not in df.columns:
+        print("Warning: Contract_Type column missing. Defaulting all to 'Free_Market'.")
+        df["Contract_Type"] = "Free_Market"
+
+    # Filter complete cases for ANALYSIS columns (Y, X, Z)
+    # We keep Contract_Type for splitting logic
+    all_cols = [Y_COL] + x_cols_final + Z_COLS + ["Contract_Type"]
     df_clean = df.dropna(subset=all_cols).copy()
     
     return df_clean, x_cols_final
 
 def main():
-    # 1. Setup Output Directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir = os.path.join(OUTPUT_DIR, f"run_{timestamp}")
     os.makedirs(run_dir, exist_ok=True)
-    
-    print(f"--- Starting Bias Mapping Pipeline ---")
-    print(f"Output Directory: {run_dir}")
+    print(f"--- Starting Stratified Bias Mapping Pipeline ---")
 
-    # 2. Load and Preprocess Data
+    # 1. Load Data
     print("\n[1/5] Loading Data...")
     try:
         df_raw = pd.read_csv(DATA_PATH)
@@ -93,72 +84,89 @@ def main():
         return
 
     df_clean, x_cols_final = preprocess_data(df_raw)
-    print(f"Loaded {len(df_clean)} players.")
+    print(f"Loaded {len(df_clean)} complete player records.")
 
-    # 3. Run DML Pipeline (The "Learn" Phase)
-    print("\n[2/5] Running DML Residualization...")
-    # Note: We use a copy to ensure index alignment
-    X = df_clean[x_cols_final]
-    Y = np.log(df_clean[Y_COL]) # Log Salary is crucial!
-    Z = df_clean[Z_COLS]
+    # 2. Stratification (Learn vs. Apply)
+    print("\n[2/5] Stratifying Data...")
+    df_fm = df_clean[df_clean['Contract_Type'] == 'Free_Market'].copy()
+    df_fixed = df_clean[df_clean['Contract_Type'] != 'Free_Market'].copy()
+    
+    print(f"  - Free Market Players (Training Set): {len(df_fm)}")
+    print(f"  - Fixed Contract Players (Application Set): {len(df_fixed)}")
 
-    # Call your existing module
-    residuals_Y, residuals_Z = generate_dml_residuals(
-        X=X, Y=Y, Z=Z,
-        model_f_trainer=train_f_model,
-        model_h_trainer=train_h_models,
-        k_folds=5 # 5-fold is sufficient for map generation
-    )
-
-    # Run Final OLS to get the "Prices" (Gammas)
-    print("\n[3/5] Estimating Price of Bias (Gamma)...")
-    ols_results = run_final_ols(residuals_Y, residuals_Z)
+    # 3. Train Models on Free Market Data
+    print("\n[3/5] Learning Market Prices (DML on Free Market)...")
+    
+    # Prepare Training Data
+    X_train = df_fm[x_cols_final]
+    Y_train = np.log(df_fm[Y_COL])
+    Z_train = df_fm[Z_COLS]
+    
+    # Train f_model (Outcome: Salary ~ Performance)
+    print("  - Training Salary Model (f)...")
+    model_f = train_f_model(X_train, Y_train)
+    
+    # Train h_models (Treatment: Bias Factor ~ Performance)
+    print("  - Training Bias Factor Models (h)...")
+    models_h = train_h_models(X_train, Z_train)
+    
+    # 4. Apply Models to ALL Players (Generate Counterfactual Residuals)
+    print("\n[4/5] Generating Attribution Matrix for Full League...")
+    
+    # Prepare Full Data
+    X_all = df_clean[x_cols_final]
+    Y_all = np.log(df_clean[Y_COL])
+    Z_all = df_clean[Z_COLS]
+    
+    # Calculate Residuals for ALL players using FM-trained models
+    # Y_res = Actual Salary - Predicted Free Market Salary
+    Y_pred_all = model_f.predict(X_all)
+    residuals_Y_all = Y_all - Y_pred_all
+    
+    # Z_res = Actual Factor - Predicted Factor (based on performance)
+    residuals_Z_all = pd.DataFrame(index=df_clean.index, columns=Z_COLS)
+    for col in Z_COLS:
+        if col in models_h:
+            Z_pred = models_h[col].predict(X_all)
+            residuals_Z_all[col] = Z_all[col] - Z_pred
+    
+    # 5. Estimate "Price of Bias" (Gamma) using ONLY Free Market Residuals
+    # We subset the residuals we just calculated back to just the FM players
+    res_Y_fm = residuals_Y_all.loc[df_fm.index]
+    res_Z_fm = residuals_Z_all.loc[df_fm.index]
+    
+    print("  - Estimating Gamma Coefficients (OLS on FM Residuals)...")
+    ols_results = run_final_ols(res_Y_fm, res_Z_fm)
     gamma_coefficients = ols_results.params
     
-    # Save econometric results
-    with open(os.path.join(run_dir, "econometric_summary.txt"), "w") as f:
-        f.write(ols_results.summary().as_text())
-    print("Saved OLS summary.")
-
-    # 4. Construct Attribution Matrix (The Bridge)
-    print("\n[4/5] Constructing Attribution Matrix (L)...")
-    attributor = BiasAttributor(gamma_coefficients, residuals_Z)
+    print("\n--- Learned Market Prices (Gamma) ---")
+    print(gamma_coefficients)
     
-    # Get the L matrix (L_ij = gamma_j * epsilon_Z_ij)
-    # BiasAttributor automatically aligns gamma with residuals_Z columns.
-    # Since residuals_Z does not have 'const', it is automatically dropped inside the class.
-        
+    # 6. Construct Attribution Matrix (L) for ALL Players
+    # L = Gamma * Residuals_All
+    attributor = BiasAttributor(gamma_coefficients, residuals_Z_all)
     L_matrix = attributor.get_attribution_matrix(normalize=True)
-    print(f"Matrix Shape: {L_matrix.shape} (Players x Bias Factors)")
     
-    # Save the matrix for inspection
+    print(f"  - Final Matrix Shape: {L_matrix.shape}")
     L_matrix.to_csv(os.path.join(run_dir, "attribution_matrix.csv"))
 
-    # 5. Fit the Bias Map (The Engine)
-    print("\n[5/5] Fitting 3D Latent Map (JAX Engine)...")
-    
+    # 7. Fit the Map
+    print("\n[5/5] Fitting 3D Latent Map...")
     fitter = BiasMapFitter(
         n_dimensions=3,
-        n_cycles=10,      # Alternating cycles
+        n_cycles=20,
         alt_steps=200,
         polish_steps=2000,
         learning_rate=0.02
     )
-    
-    # We pass the raw numpy array to JAX
     fitter.fit(L_matrix.values)
 
-    # 6. Visualization
+    # 8. Visualization
     print("\nGenerating Interactive HTML...")
     
-    # Extract Metadata (e.g., Contract Type if available, or Position)
-    # For now, let's try to use 'Contract_Type' if you engineered it, 
-    # otherwise default to 'Position' or 'Unknown'
-    meta_col = 'CONTRACT_TYPE' if 'CONTRACT_TYPE' in df_clean.columns else 'Unknown'
-    if meta_col == 'Unknown' and 'POSITION' in df_clean.columns:
-        meta_col = 'POSITION'
-        
-    player_meta = attributor.get_player_metadata(df_clean, contract_col=meta_col)
+    # Get Metadata from the CLEAN dataframe (which aligns with L_matrix)
+    # We specifically want 'Contract_Type'
+    player_meta = df_clean['Contract_Type']
     
     plot_path = os.path.join(run_dir, "bias_attribution_map_3d.html")
     
@@ -167,7 +175,7 @@ def main():
         attribution_matrix=L_matrix,
         bias_labels=L_matrix.columns.tolist(),
         player_metadata=player_meta,
-        title="Bias Attribution Map (DML-PULS Fusion)",
+        title="Bias Attribution Map (Stratified DML-PULS)",
         output_path=plot_path
     )
     
