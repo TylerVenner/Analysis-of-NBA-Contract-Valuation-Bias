@@ -30,13 +30,13 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
     if player_coords.shape[1] != 3:
         raise ValueError(f"Fitter has {player_coords.shape[1]} dimensions, but 3D plot requires 3.")
 
+    # Use the index of the attribution matrix as Player Names
     player_names = attribution_matrix.index.tolist()
     n_players = len(player_names)
     
     # Calculate Marker Sizes (Uncertainty)
-    # Players are smaller (dense cloud), Factors are larger (anchors)
-    player_sizes = _scale_variances_to_marker_size(fitter.player_lvars, 2, 6)
-    factor_sizes = _scale_variances_to_marker_size(fitter.factor_lvars, 5, 12)
+    player_sizes = _scale_variances_to_marker_size(fitter.player_lvars, 3, 8) # Slightly larger for visibility
+    factor_sizes = _scale_variances_to_marker_size(fitter.factor_lvars, 6, 15)
 
     # --- 2. Prepare Hover Text ---
     player_hover = []
@@ -74,14 +74,15 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
                 x=player_coords[indices, 0],
                 y=player_coords[indices, 1],
                 z=player_coords[indices, 2],
-                mode='markers',
+                mode='markers', # Only markers, text is on hover
                 name=str(p_type),
                 marker=dict(
                     size=player_sizes[indices],
                     color=colors[i % len(colors)],
                     opacity=0.8,
-                    line=dict(width=0) # No border for speed/look in 3D
+                    line=dict(width=0) 
                 ),
+                # We set 'text' to names, but mode='markers' means it only shows on hover
                 text=[player_names[j] for j in indices],
                 hovertext=[player_hover[j] for j in indices],
                 hoverinfo='text'
@@ -124,7 +125,16 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         hoverinfo='text'
     ))
 
-    # --- 5. 3D Scene Layout ---
+    # --- 5. 3D Scene Layout (Clean "Void" Look) ---
+    axis_template = dict(
+        showgrid=False,      # No grid lines
+        zeroline=False,      # No zero line
+        showbackground=False, # No background plane color
+        showticklabels=False, # No numeric ticks
+        title='',             # No axis titles
+        visible=False         # Hide the axis line itself
+    )
+
     fig.update_layout(
         title=dict(text=title, x=0.5, font=dict(size=20, color='white')),
         template="plotly_dark",
@@ -132,18 +142,18 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         
         # The Scene Dictionary controls 3D behavior
         scene=dict(
-            xaxis=dict(showgrid=True, gridcolor='#333', title='', showticklabels=False, backgroundcolor='#111111'),
-            yaxis=dict(showgrid=True, gridcolor='#333', title='', showticklabels=False, backgroundcolor='#111111'),
-            zaxis=dict(showgrid=True, gridcolor='#333', title='', showticklabels=False, backgroundcolor='#111111'),
+            xaxis=axis_template,
+            yaxis=axis_template,
+            zaxis=axis_template,
             # Critical: Use 'data' aspectmode so X, Y, and Z scales are equal.
-            # This ensures that 'distance' is visually meaningful.
-            aspectmode='data'
+            aspectmode='data',
+            dragmode='orbit' # Better for exploring 3D structure
         ),
         
         legend=dict(
             yanchor="top", y=0.95,
             xanchor="left", x=0.05,
-            bgcolor="rgba(0,0,0,0.5)",
+            bgcolor="rgba(0,0,0,0)", # Transparent legend
             font=dict(color="white")
         ),
         margin=dict(l=0, r=0, b=0, t=50),
