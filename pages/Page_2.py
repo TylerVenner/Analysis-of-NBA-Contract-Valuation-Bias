@@ -182,6 +182,7 @@ columns_to_keep = [
 ]
 players_df = df[columns_to_keep].copy()
 players_df["BIRTHDATE"] = pd.to_datetime(players_df["BIRTHDATE"]).dt.date
+players_df["DRAFT_NUMBER"] = players_df["DRAFT_NUMBER"].astype(str).replace("61", "Undrafted")
 
 search_term = st.text_input("Search players by name:")
 if search_term:
