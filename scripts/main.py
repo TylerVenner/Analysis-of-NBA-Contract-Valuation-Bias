@@ -29,7 +29,6 @@ X_COLS = [
 ]
 
 # Z (Contextual/Bias) - REFINED SET
-# Keeping all variables as requested by team lead
 Z_COLS = [
     "DRAFT_NUMBER", 
     "active_cap", 
@@ -37,10 +36,10 @@ Z_COLS = [
     "OWNER_NET_WORTH_B", 
     "Capacity", 
     "STADIUM_YEAR_OPENED",
-    "STADIUM_COST",     # <-- RE-ADDED per your request
-    "Followers",        # <-- RE-ADDED per your request
-    "Age",              # <-- NEW
-    "is_USA"            # <-- NEW
+    "STADIUM_COST",
+    "Followers",
+    "Age",
+    "is_USA"
 ]
 
 # Helper function
@@ -53,9 +52,7 @@ def compute_age(birthdate):
 
 def run_pipeline():
     """Run the DML pipeline and return cleaned data, residuals, and OLS results."""
-    # --- This is the better way ---
     # Create local, mutable copies of the global constants.
-    # This avoids all 'global' keywords and UnboundLocalErrors.
     x_cols_local = X_COLS.copy()
     z_cols_local = Z_COLS.copy()
     
@@ -95,7 +92,7 @@ def run_pipeline():
         if "AST_RATING" in missing_cols and "AST_RATIO" in df.columns:
             print("Info: 'AST_RATING' not found, using 'AST_RATIO' instead.")
             
-            # Modify the *local* list, not the global one.
+            # Modify the local list, not the global one.
             x_cols_local = [col if col != "AST_RATING" else "AST_RATIO" for col in x_cols_local]
             
             # Re-run the check
@@ -107,7 +104,7 @@ def run_pipeline():
             print("Please check Z_COLS list and data file.")
             return
 
-    # Drop any rows missing *any* of our key variables
+    # Drop any rows missing any of our key variables
     df_clean = df.dropna(subset=all_needed_cols).copy()
     
     print(f"Retained {df_clean.shape[0]} complete rows after dropping NaNs.")
