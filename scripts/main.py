@@ -30,6 +30,7 @@ X_COLS = [
 
 # Z (Contextual/Bias) - REFINED SET
 Z_COLS = [
+    "DRAFT_ROUND",
     "DRAFT_NUMBER", 
     "active_cap", 
     "dead_cap", 
@@ -73,6 +74,11 @@ def run_pipeline():
     if "DRAFT_NUMBER" in df.columns:
         df["DRAFT_NUMBER"] = df["DRAFT_NUMBER"].replace("Undrafted", 61)
         df["DRAFT_NUMBER"] = pd.to_numeric(df["DRAFT_NUMBER"], errors='coerce')
+
+    # Handle 'Undrafted' for DRAFT_ROUND
+    if "DRAFT_ROUND" in df.columns:
+        df["DRAFT_ROUND"] = df["DRAFT_ROUND"].replace("Undrafted", 0)
+        df["DRAFT_ROUND"] = pd.to_numeric(df["DRAFT_ROUND"], errors='coerce')
 
     # Handle 'BIRTHDATE' -> 'Age'
     if "BIRTHDATE" in df.columns:
