@@ -37,8 +37,10 @@ class BiasAttributor:
         # We broadcast the gamma coefficients across the rows
         L_raw = self.residuals_Z.multiply(self.gamma, axis=1)
         
+        L_magnitude = L_raw.abs()
+
         if normalize:
-            return self._min_max_scale(L_raw)
+            return self._min_max_scale(L_magnitude)
         return L_raw
 
     def _min_max_scale(self, df):
