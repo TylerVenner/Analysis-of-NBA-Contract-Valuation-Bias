@@ -96,54 +96,78 @@ def main():
     print(f"  - Fixed Contract Players (Application Set): {len(df_fixed)}")
 
     # 3. Train Models on Free Market Data
-    print("\n[3/5] Learning Market Prices (DML on Free Market)...")
+    print("\n[3/5] Training Models on Free Market...")
     
     # Prepare Training Data
     X_train = df_fm[x_cols_final]
     Y_train = np.log(df_fm[Y_COL])
     Z_train = df_fm[Z_COLS]
     
-    # Train f_model (Outcome: Salary ~ Performance)
-    print("  - Training Salary Model (f)...")
-    model_f = train_f_model(X_train, Y_train)
+    res_Y_dml, res_Z_dml, metrics_df = generate_dml_residuals(
+        X=X_train,
+        Y=Y_train,
+        Z=Z_train,
+        model_f_trainer=train_f_model,
+        model_h_trainer=train_h_models,
+        k_folds=5
+    )
+
+    metrics_path = os.path.join(run_dir, "model_performance.csv")
+    metrics_df.to_csv(metrics_path)
+    print(f"  -> Model metrics saved to: {metrics_path}")
+    print("  -> Snapshot of performance:")
+    print(metrics_df[['r2_mean', 'rmse_mean', 'log_loss_mean']].head())
+
+    print("  - Estimating Gamma Coefficients (OLS on DML Residuals)...")
+    ols_results = run_final_ols(res_Y_dml, res_Z_dml)
+
+    gamma_coefficients = ols_results.params
+    print("\nLearned Market Prices (Gamma)")
+    print(gamma_coefficients)
     
-    # Train h_models (Treatment: Bias Factor ~ Performance)
-    print("  - Training Bias Factor Models (h)...")
-    models_h = train_h_models(X_train, Z_train)
+    # Counterfactual attribution
+    print("\n[4/5] Phase 2: Generating Attribution Map for Full League...")
+
+    # Step A: LEARN (Train on Full Free Market Dataset)
+    # We retrain to get the strongest possible predictive model
+    print(f"  - Training production models on {len(df_fm)} Free Market players...")
+    prod_model_f = train_f_model(X_train, Y_train) 
+    prod_models_h = train_h_models(X_train, Z_train)
+
+    # Step B: APPLY (Predict on ALL Players)
+    print(f"  - Applying models to generate residuals for all {len(df_clean)} players...")
     
-    # 4. Apply Models to ALL Players (Generate Counterfactual Residuals)
-    print("\n[4/5] Generating Attribution Matrix for Full League...")
-    
-    # Prepare Full Data
+    # Prepare Full Data (D_ALL)
     X_all = df_clean[x_cols_final]
     Y_all = np.log(df_clean[Y_COL])
     Z_all = df_clean[Z_COLS]
-    
-    # Calculate Residuals for ALL players using FM-trained models
-    # Y_res = Actual Salary - Predicted Free Market Salary
-    Y_pred_all = model_f.predict(X_all)
+
+    Y_pred_all = prod_model_f.predict(X_all)
     residuals_Y_all = Y_all - Y_pred_all
     
-    # Z_res = Actual Factor - Predicted Factor (based on performance)
+    # 2. Generate Treatment Residuals (Epsilon_Z)
     residuals_Z_all = pd.DataFrame(index=df_clean.index, columns=Z_COLS)
+
     for col in Z_COLS:
-        if col in models_h:
-            Z_pred = models_h[col].predict(X_all)
+        if col in prod_models_h:
+            model = prod_models_h[col]
+            
+            # If the model is a classifier (e.g. for 'is_USA'), we want the residual
+            # to be (Actual - Probability), which aligns with Cross-Entropy/Log Loss optimization.
+            if hasattr(model, "predict_proba"):
+                try:
+                    # Get probability of the positive class (1)
+                    Z_pred = model.predict_proba(X_all)[:, 1]
+                except:
+                    # Fallback
+                    Z_pred = model.predict(X_all)
+            else:
+                # Regression (continuous variables like Age)
+                Z_pred = model.predict(X_all)
+                
             residuals_Z_all[col] = Z_all[col] - Z_pred
-    
-    # 5. Estimate "Price of Bias" (Gamma) using ONLY Free Market Residuals
-    # We subset the residuals we just calculated back to just the FM players
-    res_Y_fm = residuals_Y_all.loc[df_fm.index]
-    res_Z_fm = residuals_Z_all.loc[df_fm.index]
-    
-    print("  - Estimating Gamma Coefficients (OLS on FM Residuals)...")
-    ols_results = run_final_ols(res_Y_fm, res_Z_fm)
-    gamma_coefficients = ols_results.params
-    
-    print("\n--- Learned Market Prices (Gamma) ---")
-    print(gamma_coefficients)
-    
-    # 6. Construct Attribution Matrix (L) for ALL Players
+
+    # Construct Attribution Matrix (L) for ALL Players
     # L = Gamma * Residuals_All
     attributor = BiasAttributor(gamma_coefficients, residuals_Z_all)
     L_matrix = attributor.get_attribution_matrix(normalize=True)
@@ -151,7 +175,7 @@ def main():
     print(f"  - Final Matrix Shape: {L_matrix.shape}")
     L_matrix.to_csv(os.path.join(run_dir, "attribution_matrix.csv"))
 
-    # 7. Fit the Map
+    # Finally, fit the map
     print("\n[5/5] Fitting 3D Latent Map...")
     fitter = BiasMapFitter(
         n_dimensions=3,

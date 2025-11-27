@@ -126,16 +126,25 @@ def generate_dml_residuals(
         # 5. Predict and store Z residuals
         for col in Z.columns:
             if col in h_models:
-
                 model_h = h_models[col]
                 
-                # compute h metrics
+                # Eval h_model
                 h_metrics = _compute_metrics(Z_test[col], model_h, X_test, target_name=col)
                 h_metrics["fold"] = fold_idx
                 performance_records.append(h_metrics)
 
-                # predict prob of classification, rather than binary. this is needed for log loss.
-                Z_pred = model_h.predict_proba(X_test)[:, 1]
+                # Check if model supports probabilities
+                if hasattr(model_h, "predict_proba"):
+                    try:
+                        # Use probability of class 1 for residuals
+                        # Residual = Actual(0 or 1) - Probability(Class 1)
+                        Z_pred = model_h.predict_proba(X_test)[:, 1]
+                    except:
+                        # Fallback if something fails (e.g. weird class structure)
+                        Z_pred = model_h.predict(X_test)
+                else:
+                    # Regression (Continuous variable like Age)
+                    Z_pred = model_h.predict(X_test)
 
                 residuals_Z_oos.loc[Z_test.index, col] = Z_test[col] - Z_pred
             else:
