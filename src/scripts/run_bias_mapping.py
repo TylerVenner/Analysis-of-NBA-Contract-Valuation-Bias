@@ -94,7 +94,7 @@ def main():
     
     print("Top 5 Salaries in Clean Data:")
     print(df_fm.sort_values(Y_COL, ascending=False)[[Y_COL, 'PTS']].head())
-    
+
     print(f"  - Free Market Players (Training Set): {len(df_fm)}")
     print(f"  - Fixed Contract Players (Application Set): {len(df_fixed)}")
 
@@ -137,7 +137,6 @@ def main():
     # Store just the coefficients for the attribution step
     gamma_coefficients = ols_results.params
     
-    return 
     # Counterfactual attribution
     print("\n[4/5] Phase 2: Generating Attribution Map for Full League...")
 
