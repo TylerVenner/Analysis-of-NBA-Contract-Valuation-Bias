@@ -24,11 +24,10 @@ OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 # Feature Config (Matching main.py)
 Y_COL = "Salary"
 X_COLS = [
-    "MIN", "GP", "PTS",
     "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
     "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
-    "POSS", "FGM_PG", "FGA_PG"
+    "POSS", "FGM_PG", "FGA_PG", "GP", "MIN", "PTS"
 ]
 Z_COLS = [
     "DRAFT_NUMBER", "active_cap", "dead_cap", "OWNER_NET_WORTH_B", 
@@ -92,6 +91,9 @@ def main():
     print("\n[2/5] Stratifying Data...")
     df_fm = df_clean[df_clean['Contract_Type'] == 'Free_Market'].copy()
     df_fixed = df_clean[df_clean['Contract_Type'] != 'Free_Market'].copy()
+    
+    print("Top 5 Salaries in Clean Data:")
+    print(df_fm.sort_values(Y_COL, ascending=False)[[Y_COL, 'PTS']].head())
     
     print(f"  - Free Market Players (Training Set): {len(df_fm)}")
     print(f"  - Fixed Contract Players (Application Set): {len(df_fixed)}")
