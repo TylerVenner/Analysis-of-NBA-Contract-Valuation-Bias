@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from typing import Dict, Any
@@ -39,18 +39,24 @@ def train_h_models(X_train: pd.DataFrame, Z_train: pd.DataFrame) -> Dict[str, An
 
         # 1. Determine model type based on Z_j's data type
         if is_numeric and not is_binary:
-            # It's a continuous variable, use Linear Regression
-            model = LinearRegression()
+            # Continuous Factor (e.g. Age) -> REGRESSION
+            model = GradientBoostingRegressor(
+                n_estimators=100,
+                learning_rate=0.05,
+                max_depth=3,
+                random_state=42
+            )
         else:
-            # It's a categorical variable, use Logistic Regression
-            # We add 'class_weight' to help with imbalanced classes
-            model = LogisticRegression(
-                max_iter=1000, 
-                random_state=1, 
-                class_weight='balanced'
+            # Binary Factor (e.g. is_USA) -> CLASSIFICATION
+            # GradientBoostingClassifier provides better probability estimates
+            # than Logistic Regression for complex decision boundaries.
+            model = GradientBoostingClassifier(
+                n_estimators=100,
+                learning_rate=0.05,
+                max_depth=3,
+                random_state=42
             )
 
-        # 2. Build a pipeline to scale X and then fit the model
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('model', model)
