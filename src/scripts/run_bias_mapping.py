@@ -18,7 +18,7 @@ from src.integration.visualizer import plot_bias_map_3d
 from src.core.fitters import BiasMapFitter
 
 # Paths
-DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_with_contracts.csv")
+DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_final.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
 # Feature Config (Matching main.py)
