@@ -116,15 +116,25 @@ def main():
     metrics_df.to_csv(metrics_path)
     print(f"  -> Model metrics saved to: {metrics_path}")
     print("  -> Snapshot of performance:")
-    print(metrics_df[['r2_mean', 'rmse_mean', 'log_loss_mean']].head())
+    print(metrics_df[['r2_mean', 'rmse_mean', 'log_loss_mean']])
 
     print("  - Estimating Gamma Coefficients (OLS on DML Residuals)...")
     ols_results = run_final_ols(res_Y_dml, res_Z_dml)
 
-    gamma_coefficients = ols_results.params
-    print("\nLearned Market Prices (Gamma)")
-    print(gamma_coefficients)
+    gamma_summary = pd.DataFrame({
+        "Gamma (Price)": ols_results.params,
+        "P-Value": ols_results.pvalues,
+        "Std. Error": ols_results.bse  # Standard Error is also very useful
+    })
+
+    print("\n--- Learned Market Prices (Gamma & Significance) ---")
+    # Sort by P-Value so the most significant factors appear at the top
+    print(gamma_summary.sort_values("P-Value").round(5)) 
     
+    # Store just the coefficients for the attribution step
+    gamma_coefficients = ols_results.params
+    
+    return 
     # Counterfactual attribution
     print("\n[4/5] Phase 2: Generating Attribution Map for Full League...")
 
