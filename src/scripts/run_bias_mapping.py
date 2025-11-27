@@ -24,6 +24,7 @@ OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 # Feature Config (Matching main.py)
 Y_COL = "Salary"
 X_COLS = [
+    "MIN", "GP", "PTS",
     "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
     "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
