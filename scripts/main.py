@@ -124,7 +124,7 @@ def run_pipeline():
     print(f"Final Z features: {list(Z.columns)}")
 
     # --- 4. Run DML Residual Generation (Module 3) ---
-    residuals_Y, residuals_Z = generate_dml_residuals(
+    residuals_Y, residuals_Z, metrics = generate_dml_residuals(
         X=X,
         Y=Y,
         Z=Z,
