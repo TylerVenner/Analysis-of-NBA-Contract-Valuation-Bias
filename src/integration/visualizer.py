@@ -2,22 +2,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-def _scale_variances_to_marker_size(log_variances_nd, min_size=2, max_size=10):
-    """
-    Helper: Converts log-variances into a scaled marker size.
-    Adjusted for 3D rendering (smaller scalars required compared to 2D pixels).
-    """
-    # Sum variances across all 3 dimensions
-    total_variances = np.sum(np.exp(log_variances_nd), axis=1)
-    log_v = np.log(total_variances + 1e-9)
-    
-    min_v, max_v = np.min(log_v), np.max(log_v)
-    if max_v == min_v: 
-        return np.full_like(total_variances, min_size)
-    
-    # Min-Max scale
-    return min_size + (log_v - min_v) / (max_v - min_v) * (max_size - min_size)
-
 def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=None, 
                      title="Latent Structure of Economic Bias (3D)", output_path="bias_map_3d.html"):
     """
@@ -35,8 +19,8 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
     n_players = len(player_names)
     
     # Calculate Marker Sizes (Uncertainty)
-    player_sizes = _scale_variances_to_marker_size(fitter.player_lvars, 3, 8) 
-    factor_sizes = _scale_variances_to_marker_size(fitter.factor_lvars, 6, 15)
+    player_sizes = 7 
+    factor_sizes = 12
 
     # --- 2. Prepare Hover Text ---
     player_hover = []
@@ -50,14 +34,12 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         factors_str = "<br>".join([f"{f}: {row_values[f]:.2f}" for f in top_factors])
         
         text = (f"<b>{name}</b><br>{meta_str}<br>"
-                f"<i>Uncertainty: {player_sizes[i]:.1f}</i><br>"
                 f"<b>Key Drivers:</b><br>{factors_str}")
         player_hover.append(text)
 
     factor_hover = []
     for i, label in enumerate(bias_labels):
-        text = (f"<b>{label}</b><br>"
-                f"Latent Uncertainty: {factor_sizes[i]:.1f}")
+        text = (f"<b>{label}</b><br>")
         factor_hover.append(text)
 
     fig = go.Figure()
@@ -79,7 +61,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
                 mode='markers', # Markers only (names are on hover to prevent clutter)
                 name=str(p_type),
                 marker=dict(
-                    size=player_sizes[indices],
+                    size=6,
                     color=colors[i % len(colors)],
                     opacity=0.8,
                     line=dict(width=0) 
@@ -114,7 +96,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         mode='markers+text', # Text ALWAYS visible for Factors
         name='Bias Factors',
         marker=dict(
-            size=factor_sizes,
+            size=11,
             color='#FFD700', # Gold
             symbol='diamond',
             opacity=1.0,

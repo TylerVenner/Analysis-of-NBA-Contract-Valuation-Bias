@@ -18,7 +18,7 @@ from src.integration.visualizer import plot_bias_map_3d
 from src.core.fitters import BiasMapFitter
 
 # Paths
-DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_with_contracts.csv")
+DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_advanced.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
 # Feature Config (Matching main.py)
@@ -27,7 +27,9 @@ X_COLS = [
     "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
     "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
-    "POSS", "FGM_PG", "FGA_PG"
+    "POSS", "FGM_PG", "FGA_PG", 
+    "GP", "MIN", "PTS",
+    "AVG_SPEED", "DIST_MILES", "ALL_STAR_APPEARANCES"
 ]
 Z_COLS = [
     "DRAFT_NUMBER", "active_cap", "dead_cap", "OWNER_NET_WORTH_B", 
@@ -62,6 +64,14 @@ def preprocess_data(df):
         print("Warning: Contract_Type column missing. Defaulting all to 'Free_Market'.")
         df["Contract_Type"] = "Free_Market"
 
+    if "Followers" in df.columns:
+        # log1p(x) = log(x + 1) to handle zeros safely
+        df["Followers"] = np.log1p(df["Followers"])
+        
+    if "OWNER_NET_WORTH_B" in df.columns:
+        # Net worth is also heavily skewed (Ballmer vs others)
+        df["OWNER_NET_WORTH_B"] = np.log1p(df["OWNER_NET_WORTH_B"])
+        
     # Filter complete cases for ANALYSIS columns (Y, X, Z)
     # We keep Contract_Type for splitting logic
     all_cols = [Y_COL] + x_cols_final + Z_COLS + ["Contract_Type"]
@@ -92,58 +102,120 @@ def main():
     df_fm = df_clean[df_clean['Contract_Type'] == 'Free_Market'].copy()
     df_fixed = df_clean[df_clean['Contract_Type'] != 'Free_Market'].copy()
     
+    print("Top 5 Salaries in Clean Data:")
+    print(df_fm.sort_values(Y_COL, ascending=False)[[Y_COL, 'PTS']].head())
+
     print(f"  - Free Market Players (Training Set): {len(df_fm)}")
     print(f"  - Fixed Contract Players (Application Set): {len(df_fixed)}")
 
     # 3. Train Models on Free Market Data
-    print("\n[3/5] Learning Market Prices (DML on Free Market)...")
+    print("\n[3/5] Training Models on Free Market...")
     
     # Prepare Training Data
     X_train = df_fm[x_cols_final]
     Y_train = np.log(df_fm[Y_COL])
     Z_train = df_fm[Z_COLS]
     
-    # Train f_model (Outcome: Salary ~ Performance)
-    print("  - Training Salary Model (f)...")
-    model_f = train_f_model(X_train, Y_train)
+    import statsmodels.api as sm
     
-    # Train h_models (Treatment: Bias Factor ~ Performance)
-    print("  - Training Bias Factor Models (h)...")
-    models_h = train_h_models(X_train, Z_train)
+    print("\n[Diagnostic] Checking Feature Significance (Linear Proxy)...")
+    print("  (Note: These p-values are from a simple OLS. The actual Gradient Boosting model captures more complex non-linearities.)")
     
-    # 4. Apply Models to ALL Players (Generate Counterfactual Residuals)
-    print("\n[4/5] Generating Attribution Matrix for Full League...")
+    try:
+        # 1. Add Constant for Intercept
+        X_diag = sm.add_constant(X_train.astype(float))
+        
+        # 2. Fit Simple OLS
+        model_diag = sm.OLS(Y_train, X_diag).fit()
+        
+        # 3. Create Clean Summary Table
+        feature_summary = pd.DataFrame({
+            "Coef (Impact)": model_diag.params,
+            "P-Value": model_diag.pvalues,
+            "t-stat": model_diag.tvalues
+        })
+        
+        # 4. Sort by Most Significant (Lowest P-Value)
+        print(feature_summary.sort_values("P-Value").round(4))
+        print("-" * 60)
+        
+    except Exception as e:
+        print(f"  Warning: Could not run diagnostic OLS: {e}")
+
+    res_Y_dml, res_Z_dml, metrics_df = generate_dml_residuals(
+        X=X_train,
+        Y=Y_train,
+        Z=Z_train,
+        model_f_trainer=train_f_model,
+        model_h_trainer=train_h_models,
+        k_folds=5
+    )
+
+    metrics_path = os.path.join(run_dir, "model_performance.csv")
+    metrics_df.to_csv(metrics_path)
+    print(f"  -> Model metrics saved to: {metrics_path}")
+    print("  -> Snapshot of performance:")
+    print(metrics_df[['r2_mean', 'rmse_mean', 'log_loss_mean']])
+
+    print("  - Estimating Gamma Coefficients (OLS on DML Residuals)...")
+    ols_results = run_final_ols(res_Y_dml, res_Z_dml)
+
+    gamma_summary = pd.DataFrame({
+        "Gamma (Price)": ols_results.params,
+        "P-Value": ols_results.pvalues,
+        "Std. Error": ols_results.bse  # Standard Error is also very useful
+    })
+
+    print("\n--- Learned Market Prices (Gamma & Significance) ---")
+    # Sort by P-Value so the most significant factors appear at the top
+    print(gamma_summary.sort_values("P-Value").round(5)) 
     
-    # Prepare Full Data
+    # Store just the coefficients for the attribution step
+    gamma_coefficients = ols_results.params
+    
+    # Counterfactual attribution
+    print("\n[4/5] Phase 2: Generating Attribution Map for Full League...")
+
+    # Step A: LEARN (Train on Full Free Market Dataset)
+    # We retrain to get the strongest possible predictive model
+    print(f"  - Training production models on {len(df_fm)} Free Market players...")
+    prod_model_f = train_f_model(X_train, Y_train) 
+    prod_models_h = train_h_models(X_train, Z_train)
+
+    # Step B: APPLY (Predict on ALL Players)
+    print(f"  - Applying models to generate residuals for all {len(df_clean)} players...")
+    
+    # Prepare Full Data (D_ALL)
     X_all = df_clean[x_cols_final]
     Y_all = np.log(df_clean[Y_COL])
     Z_all = df_clean[Z_COLS]
-    
-    # Calculate Residuals for ALL players using FM-trained models
-    # Y_res = Actual Salary - Predicted Free Market Salary
-    Y_pred_all = model_f.predict(X_all)
+
+    Y_pred_all = prod_model_f.predict(X_all)
     residuals_Y_all = Y_all - Y_pred_all
     
-    # Z_res = Actual Factor - Predicted Factor (based on performance)
+    # 2. Generate Treatment Residuals (Epsilon_Z)
     residuals_Z_all = pd.DataFrame(index=df_clean.index, columns=Z_COLS)
+
     for col in Z_COLS:
-        if col in models_h:
-            Z_pred = models_h[col].predict(X_all)
+        if col in prod_models_h:
+            model = prod_models_h[col]
+            
+            # If the model is a classifier (e.g. for 'is_USA'), we want the residual
+            # to be (Actual - Probability), which aligns with Cross-Entropy/Log Loss optimization.
+            if hasattr(model, "predict_proba"):
+                try:
+                    # Get probability of the positive class (1)
+                    Z_pred = model.predict_proba(X_all)[:, 1]
+                except:
+                    # Fallback
+                    Z_pred = model.predict(X_all)
+            else:
+                # Regression (continuous variables like Age)
+                Z_pred = model.predict(X_all)
+                
             residuals_Z_all[col] = Z_all[col] - Z_pred
-    
-    # 5. Estimate "Price of Bias" (Gamma) using ONLY Free Market Residuals
-    # We subset the residuals we just calculated back to just the FM players
-    res_Y_fm = residuals_Y_all.loc[df_fm.index]
-    res_Z_fm = residuals_Z_all.loc[df_fm.index]
-    
-    print("  - Estimating Gamma Coefficients (OLS on FM Residuals)...")
-    ols_results = run_final_ols(res_Y_fm, res_Z_fm)
-    gamma_coefficients = ols_results.params
-    
-    print("\n--- Learned Market Prices (Gamma) ---")
-    print(gamma_coefficients)
-    
-    # 6. Construct Attribution Matrix (L) for ALL Players
+
+    # Construct Attribution Matrix (L) for ALL Players
     # L = Gamma * Residuals_All
     attributor = BiasAttributor(gamma_coefficients, residuals_Z_all)
     L_matrix = attributor.get_attribution_matrix(normalize=True)
@@ -151,7 +223,7 @@ def main():
     print(f"  - Final Matrix Shape: {L_matrix.shape}")
     L_matrix.to_csv(os.path.join(run_dir, "attribution_matrix.csv"))
 
-    # 7. Fit the Map
+    # Finally, fit the map
     print("\n[5/5] Fitting 3D Latent Map...")
     fitter = BiasMapFitter(
         n_dimensions=3,
