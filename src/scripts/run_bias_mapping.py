@@ -18,7 +18,7 @@ from src.integration.visualizer import plot_bias_map_3d
 from src.core.fitters import BiasMapFitter
 
 # Paths
-DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_final.csv")
+DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_advanced.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
 # Feature Config (Matching main.py)
@@ -27,7 +27,9 @@ X_COLS = [
     "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
     "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
-    "POSS", "FGM_PG", "FGA_PG", "GP", "MIN", "PTS"
+    "POSS", "FGM_PG", "FGA_PG", 
+    "GP", "MIN", "PTS",
+    "AVG_SPEED", "DIST_MILES", "ALL_STAR_APPEARANCES"
 ]
 Z_COLS = [
     "DRAFT_NUMBER", "active_cap", "dead_cap", "OWNER_NET_WORTH_B", 
@@ -62,6 +64,14 @@ def preprocess_data(df):
         print("Warning: Contract_Type column missing. Defaulting all to 'Free_Market'.")
         df["Contract_Type"] = "Free_Market"
 
+    if "Followers" in df.columns:
+        # log1p(x) = log(x + 1) to handle zeros safely
+        df["Followers"] = np.log1p(df["Followers"])
+        
+    if "OWNER_NET_WORTH_B" in df.columns:
+        # Net worth is also heavily skewed (Ballmer vs others)
+        df["OWNER_NET_WORTH_B"] = np.log1p(df["OWNER_NET_WORTH_B"])
+        
     # Filter complete cases for ANALYSIS columns (Y, X, Z)
     # We keep Contract_Type for splitting logic
     all_cols = [Y_COL] + x_cols_final + Z_COLS + ["Contract_Type"]
@@ -106,6 +116,32 @@ def main():
     Y_train = np.log(df_fm[Y_COL])
     Z_train = df_fm[Z_COLS]
     
+    import statsmodels.api as sm
+    
+    print("\n[Diagnostic] Checking Feature Significance (Linear Proxy)...")
+    print("  (Note: These p-values are from a simple OLS. The actual Gradient Boosting model captures more complex non-linearities.)")
+    
+    try:
+        # 1. Add Constant for Intercept
+        X_diag = sm.add_constant(X_train.astype(float))
+        
+        # 2. Fit Simple OLS
+        model_diag = sm.OLS(Y_train, X_diag).fit()
+        
+        # 3. Create Clean Summary Table
+        feature_summary = pd.DataFrame({
+            "Coef (Impact)": model_diag.params,
+            "P-Value": model_diag.pvalues,
+            "t-stat": model_diag.tvalues
+        })
+        
+        # 4. Sort by Most Significant (Lowest P-Value)
+        print(feature_summary.sort_values("P-Value").round(4))
+        print("-" * 60)
+        
+    except Exception as e:
+        print(f"  Warning: Could not run diagnostic OLS: {e}")
+
     res_Y_dml, res_Z_dml, metrics_df = generate_dml_residuals(
         X=X_train,
         Y=Y_train,

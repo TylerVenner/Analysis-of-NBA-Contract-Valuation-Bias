@@ -34,14 +34,12 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         factors_str = "<br>".join([f"{f}: {row_values[f]:.2f}" for f in top_factors])
         
         text = (f"<b>{name}</b><br>{meta_str}<br>"
-                f"<i>Uncertainty: {player_sizes[i]:.1f}</i><br>"
                 f"<b>Key Drivers:</b><br>{factors_str}")
         player_hover.append(text)
 
     factor_hover = []
     for i, label in enumerate(bias_labels):
-        text = (f"<b>{label}</b><br>"
-                f"Latent Uncertainty: {factor_sizes[i]:.1f}")
+        text = (f"<b>{label}</b><br>")
         factor_hover.append(text)
 
     fig = go.Figure()
@@ -63,7 +61,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
                 mode='markers', # Markers only (names are on hover to prevent clutter)
                 name=str(p_type),
                 marker=dict(
-                    size=player_sizes[indices],
+                    size=6,
                     color=colors[i % len(colors)],
                     opacity=0.8,
                     line=dict(width=0) 
@@ -98,7 +96,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         mode='markers+text', # Text ALWAYS visible for Factors
         name='Bias Factors',
         marker=dict(
-            size=factor_sizes,
+            size=11,
             color='#FFD700', # Gold
             symbol='diamond',
             opacity=1.0,
