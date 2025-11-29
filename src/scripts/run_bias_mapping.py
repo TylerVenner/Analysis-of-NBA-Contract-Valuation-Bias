@@ -18,7 +18,7 @@ from src.integration.visualizer import plot_bias_map_3d
 from src.core.fitters import BiasMapFitter
 
 # Paths
-DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_advanced.csv")
+DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_advanced_v2.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
 # Feature Config (Matching main.py)
@@ -29,7 +29,9 @@ X_COLS = [
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
     "POSS", "FGM_PG", "FGA_PG", 
     "GP", "MIN", "PTS",
-    "AVG_SPEED", "DIST_MILES", "ALL_STAR_APPEARANCES"
+    "AVG_SPEED", "DIST_MILES", "ALL_STAR_APPEARANCES",
+    "ISO_PTS", "ISO_PPP", "PNR_PTS", "PNR_PPP", "POST_PTS", "POST_PPP",
+    "CLUTCH_PTS", "CLUTCH_GP", "RIM_DFG_PCT", "RIM_CONTEST_FREQ"
 ]
 Z_COLS = [
     "DRAFT_NUMBER", "active_cap", "dead_cap", "OWNER_NET_WORTH_B", 
@@ -89,6 +91,12 @@ def main():
     print("\n[1/5] Loading Data...")
     try:
         df_raw = pd.read_csv(DATA_PATH)
+        
+        initial_len = len(df_raw)
+        df_raw = df_raw.drop_duplicates(subset=['PLAYER_NAME'])
+        if len(df_raw) < initial_len:
+            print(f"  Warning: Dropped {initial_len - len(df_raw)} duplicate player records.")
+
         df_raw = df_raw.set_index('PLAYER_NAME')
     except FileNotFoundError:
         print(f"Error: Could not find data at {DATA_PATH}")
@@ -170,6 +178,7 @@ def main():
     # Sort by P-Value so the most significant factors appear at the top
     print(gamma_summary.sort_values("P-Value").round(5)) 
     
+    return
     # Store just the coefficients for the attribution step
     gamma_coefficients = ols_results.params
     
