@@ -207,7 +207,7 @@ def main():
     # Sort by P-Value so the most significant factors appear at the top
     print(gamma_summary.sort_values("P-Value").round(5)) 
     
-    return
+    
     # Store just the coefficients for the attribution step
     gamma_coefficients = ols_results.params
     
