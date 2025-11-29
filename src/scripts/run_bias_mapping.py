@@ -18,18 +18,21 @@ from src.integration.visualizer import plot_bias_map_3d
 from src.core.fitters import BiasMapFitter
 
 # Paths
-DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_advanced.csv")
+DATA_PATH = os.path.join(project_root, "data", "processed", "master_dataset_advanced_v2.csv")
 OUTPUT_DIR = os.path.join(project_root, "reports", "maps")
 
 # Feature Config (Matching main.py)
 Y_COL = "Salary"
 X_COLS = [
-    "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
-    "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
+    "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_TO", 
+    "AST_RATING", "REB_PCT", "TM_TOV_PCT", 
     "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
     "POSS", "FGM_PG", "FGA_PG", 
-    "GP", "MIN", "PTS",
-    "AVG_SPEED", "DIST_MILES", "ALL_STAR_APPEARANCES"
+    "GP", "MIN", 
+    "AVG_SPEED", "DIST_MILES",
+    "ISO_PTS", "POST_PTS",
+    "CLUTCH_PTS", "CLUTCH_GP", "RIM_DFG_PCT", # "RIM_CONTEST_FREQ" "PNR_PPP" "PTS" "OREB_PCT" "AST_PCT" "DREB_PCT" "ISO_PPP" "ALL_STAR_APPEARANCES"
+    # "PNR_PTS" "POST_PPP"
 ]
 Z_COLS = [
     "DRAFT_NUMBER", "active_cap", "dead_cap", "OWNER_NET_WORTH_B", 
@@ -89,6 +92,12 @@ def main():
     print("\n[1/5] Loading Data...")
     try:
         df_raw = pd.read_csv(DATA_PATH)
+
+        initial_len = len(df_raw)
+        df_raw = df_raw.drop_duplicates(subset=['PLAYER_NAME'])
+        if len(df_raw) < initial_len:
+            print(f"  Warning: Dropped {initial_len - len(df_raw)} duplicate player records.")
+
         df_raw = df_raw.set_index('PLAYER_NAME')
     except FileNotFoundError:
         print(f"Error: Could not find data at {DATA_PATH}")
@@ -142,6 +151,34 @@ def main():
     except Exception as e:
         print(f"  Warning: Could not run diagnostic OLS: {e}")
 
+    print("\n[Diagnostic] Checking Feature Importance (Gradient Boosting)...")
+    
+    # 1. Train a one-off model on the full FM dataset
+    # We use the same trainer you use in the DML loop
+    diag_model = train_f_model(X_train, Y_train)
+    
+    # 2. Extract Importances
+    # Handle the fact that train_f_model returns a Pipeline or GridSearchCV
+    if hasattr(diag_model, 'best_estimator_'):
+        # If using RandomizedSearchCV
+        final_reg = diag_model.best_estimator_.named_steps['regressor']
+    else:
+        # If using standard Pipeline
+        final_reg = diag_model.named_steps['regressor']
+        
+    importances = final_reg.feature_importances_
+    
+    # 3. Create a clean table
+    feat_imp = pd.DataFrame({
+        'Feature': X_train.columns,
+        'Importance': importances
+    }).sort_values('Importance', ascending=False)
+    
+    print(feat_imp) # Show top 15 drivers
+    print(f"\n  -> Total Features: {len(feat_imp)}")
+    print(f"  -> Features with 0.00 importance: {len(feat_imp[feat_imp['Importance'] == 0])}")
+    print("-" * 60)
+
     res_Y_dml, res_Z_dml, metrics_df = generate_dml_residuals(
         X=X_train,
         Y=Y_train,
@@ -169,6 +206,7 @@ def main():
     print("\n--- Learned Market Prices (Gamma & Significance) ---")
     # Sort by P-Value so the most significant factors appear at the top
     print(gamma_summary.sort_values("P-Value").round(5)) 
+    
     
     # Store just the coefficients for the attribution step
     gamma_coefficients = ols_results.params

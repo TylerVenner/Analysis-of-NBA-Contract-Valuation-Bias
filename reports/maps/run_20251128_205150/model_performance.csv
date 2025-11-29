@@ -1,0 +1,12 @@
+target,type,r2_mean,r2_std,rmse_mean,rmse_std,accuracy_mean,accuracy_std,roc_auc_mean,roc_auc_std,log_loss_mean,log_loss_std
+Age,regression,-0.0266,0.0602,4.0316,0.2174,,,,,,
+Capacity,regression,-0.1457,0.1138,1115.9237,73.6061,,,,,,
+DRAFT_NUMBER,regression,-0.1503,0.0302,18.6894,1.2999,,,,,,
+Followers,regression,0.0269,0.2084,4.2585,0.8048,,,,,,
+OWNER_NET_WORTH_B,regression,-0.1896,0.1143,1.2114,0.1898,,,,,,
+STADIUM_COST,regression,-0.3072,0.3781,459663936.4643,103513220.7915,,,,,,
+STADIUM_YEAR_OPENED,regression,-0.0095,0.0825,11.4889,2.1628,,,,,,
+Salary_Model,regression,0.4862,0.1156,1.0715,0.2054,,,,,,
+active_cap,regression,0.0654,0.2367,15258788.9619,1410712.2302,,,,,,
+dead_cap,regression,-0.277,0.3833,9691077.1938,2591220.382,,,,,,
+is_USA,classification,,,,,0.6979,0.1194,0.5716,0.0909,0.6728,0.1378
