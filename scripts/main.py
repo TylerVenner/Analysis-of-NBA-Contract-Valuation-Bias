@@ -15,17 +15,18 @@ from src.analysis.run_final_ols import run_final_ols
 
 # --- Configuration ---
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_ROOT / "data" / "processed" / "master_dataset_advanced.csv"
+DATA_PATH = PROJECT_ROOT / "data" / "processed" / "master_dataset_advanced_v2.csv"
 
 # Y (Outcome)
 Y_COL = "Salary"
 
-# X (Performance) - 18 features
+# X (Performance)
 X_COLS = [
     "OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
     "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
-    "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", 
-    "POSS", "FGM_PG", "FGA_PG"
+    "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", "POSS", "FGM_PG", 
+    "FGA_PG", "GP", "MIN", "AVG_SPEED", "DIST_MILES", "ISO_PTS", 
+    "POST_PTS", "CLUTCH_PTS", "CLUTCH_GP", "RIM_DFG_PCT"
 ]
 
 # Z (Contextual/Bias) - REFINED SET
@@ -188,10 +189,6 @@ def main():
     """Main function to run the entire DML pipeline independently."""
     print("Starting DML Pipeline (Refined Z-Set)...")
     df_clean, residuals_Y, residuals_Z, final_ols_results = run_pipeline()
-
-    print(" FINAL OLS PARAMS: ")
-    print(final_ols_results.params)
-
 
     df_with_bias = compute_player_bias_effect(
         df_clean,
