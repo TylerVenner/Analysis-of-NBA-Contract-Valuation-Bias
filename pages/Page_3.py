@@ -99,7 +99,7 @@ with col2:
     perf_col = st.selectbox(
         "Select Performance Factor (X):",
         ["OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
-         "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
+         "AST_RATIO", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
         "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", "POSS", "FGM_PG", 
         "FGA_PG", "GP", "MIN", "AVG_SPEED", "DIST_MILES", "ISO_PTS", 
         "POST_PTS", "CLUTCH_PTS", "CLUTCH_GP", "RIM_DFG_PCT"]
