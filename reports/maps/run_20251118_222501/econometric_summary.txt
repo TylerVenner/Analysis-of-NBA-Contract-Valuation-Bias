@@ -1,0 +1,36 @@
+                            OLS Regression Results                            
+==============================================================================
+Dep. Variable:              epsilon_Y   R-squared:                       0.192
+Model:                            OLS   Adj. R-squared:                  0.172
+Method:                 Least Squares   F-statistic:                     9.119
+Date:                Tue, 18 Nov 2025   Prob (F-statistic):           1.56e-11
+Time:                        22:25:02   Log-Likelihood:                -577.27
+No. Observations:                 409   AIC:                             1177.
+Df Residuals:                     398   BIC:                             1221.
+Df Model:                          10                                         
+Covariance Type:                  HC3                                         
+=======================================================================================
+                          coef    std err          z      P>|z|      [0.025      0.975]
+---------------------------------------------------------------------------------------
+const                  -0.0167      0.050     -0.333      0.739      -0.115       0.082
+DRAFT_NUMBER           -0.0181      0.004     -4.647      0.000      -0.026      -0.010
+active_cap          -9.012e-09   7.73e-09     -1.166      0.244   -2.42e-08    6.14e-09
+dead_cap             3.161e-10   7.23e-09      0.044      0.965   -1.38e-08    1.45e-08
+OWNER_NET_WORTH_B    4.805e-05      0.003      0.015      0.988      -0.006       0.006
+Capacity             7.072e-05   4.74e-05      1.492      0.136   -2.22e-05       0.000
+STADIUM_YEAR_OPENED     0.0005      0.007      0.077      0.938      -0.013       0.014
+STADIUM_COST         -3.02e-10   2.58e-10     -1.169      0.242   -8.08e-10    2.04e-10
+Followers           -3.272e-09   9.09e-09     -0.360      0.719   -2.11e-08    1.46e-08
+Age                     0.0663      0.014      4.644      0.000       0.038       0.094
+is_USA                 -0.1940      0.161     -1.202      0.230      -0.510       0.122
+==============================================================================
+Omnibus:                      135.601   Durbin-Watson:                   1.901
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):              512.253
+Skew:                          -1.448   Prob(JB):                    5.83e-112
+Kurtosis:                       7.656   Cond. No.                     9.36e+08
+==============================================================================
+
+Notes:
+[1] Standard Errors are heteroscedasticity robust (HC3)
+[2] The condition number is large, 9.36e+08. This might indicate that there are
+strong multicollinearity or other numerical problems.

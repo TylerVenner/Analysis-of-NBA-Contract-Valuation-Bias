@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.ensemble import GradientBoostingRegressor, GradientBoostingClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from typing import Dict, Any
@@ -30,20 +30,33 @@ def train_h_models(X_train: pd.DataFrame, Z_train: pd.DataFrame) -> Dict[str, An
     for col_name in Z_train.columns:
         Z_j = Z_train[col_name]
 
+        # Check if it's effectively binary (<= 2 unique values)
+        # This catches 'is_USA' even though it is int64.
+        is_binary = (Z_j.dropna().nunique() <= 2)
+
+        # Check if it's numeric
+        is_numeric = pd.api.types.is_numeric_dtype(Z_j)
+
         # 1. Determine model type based on Z_j's data type
-        if pd.api.types.is_numeric_dtype(Z_j):
-            # It's a continuous variable, use Linear Regression
-            model = LinearRegression()
+        if is_numeric and not is_binary:
+            # Continuous Factor (e.g. Age) -> REGRESSION
+            model = GradientBoostingRegressor(
+                n_estimators=100,
+                learning_rate=0.05,
+                max_depth=3,
+                random_state=42
+            )
         else:
-            # It's a categorical variable, use Logistic Regression
-            # We add 'class_weight' to help with imbalanced classes
-            model = LogisticRegression(
-                max_iter=1000, 
-                random_state=1, 
-                class_weight='balanced'
+            # Binary Factor (e.g. is_USA) -> CLASSIFICATION
+            # GradientBoostingClassifier provides better probability estimates
+            # than Logistic Regression for complex decision boundaries.
+            model = GradientBoostingClassifier(
+                n_estimators=100,
+                learning_rate=0.05,
+                max_depth=3,
+                random_state=42
             )
 
-        # 2. Build a pipeline to scale X and then fit the model
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('model', model)
