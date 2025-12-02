@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import streamlit.components.v1 as components
+import plotly.express as px
 import os
 import glob
 from pathlib import Path
@@ -11,6 +12,15 @@ st.set_page_config(
     page_icon="📉",
     layout="wide"
 )
+
+DATA_PATH = "data/processed/master_dataset_advanced_v2.csv"
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv(DATA_PATH)
+    return df
+
+df = load_data()
 
 # --- Helper Functions ---
 def get_latest_bias_map_path(base_dir="reports/maps"):
@@ -85,7 +95,46 @@ col1, col2 = st.columns([1, 3])
 with col1:
     selected_factor = st.selectbox("Select Bias Factor (Z):", z_cols)
 with col2:
-    st.info(f"Analysis for **{selected_factor} ~ Performance** coming soon.")
+    st.markdown("### Relationship Between Bias and Performance Factors")
+    perf_col = st.selectbox(
+        "Select Performance Factor (X):",
+        ["OFF_RATING", "DEF_RATING", "NET_RATING", "AST_PCT", "AST_TO", 
+         "AST_RATING", "OREB_PCT", "REB_PCT", "DREB_PCT", "TM_TOV_PCT", 
+        "EFG_PCT", "TS_PCT", "PACE", "PIE", "USG_PCT", "POSS", "FGM_PG", 
+        "FGA_PG", "GP", "MIN", "AVG_SPEED", "DIST_MILES", "ISO_PTS", 
+        "POST_PTS", "CLUTCH_PTS", "CLUTCH_GP", "RIM_DFG_PCT"]
+    )
+    plot_df = df[[perf_col, selected_factor]].dropna()
+    if plot_df.empty:
+        st.warning("Not enough data to plot this relationship.")
+    else:
+        # Correlation
+        corr_val = plot_df[perf_col].corr(plot_df[selected_factor])
+
+        st.metric(
+            label="Correlation (Bias ~ Performance)",
+            value=f"{corr_val:.3f}"
+        )
+        # Scatter w/ OLS trend
+        fig = px.scatter(
+            plot_df,
+            x=perf_col,
+            y=selected_factor,
+            trendline="ols",
+            opacity=0.65,
+            labels={
+                perf_col: "Performance Metric",
+                selected_factor: "Bias / Context Variable"
+            },
+            title=f"{perf_col} vs. {selected_factor}"
+        )
+
+        fig.update_layout(
+            height=420,
+            margin=dict(l=0, r=0, t=40, b=0),
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
 
