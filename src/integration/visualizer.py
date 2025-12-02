@@ -19,7 +19,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
     n_players = len(player_names)
     
     # Calculate Marker Sizes (Uncertainty)
-    player_sizes = 7 
+    player_sizes = 3 
     factor_sizes = 12
 
     # --- 2. Prepare Hover Text ---
@@ -61,7 +61,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
                 mode='markers', # Markers only (names are on hover to prevent clutter)
                 name=str(p_type),
                 marker=dict(
-                    size=6,
+                    size=4,
                     color=colors[i % len(colors)],
                     opacity=0.8,
                     line=dict(width=0) 
@@ -96,7 +96,7 @@ def plot_bias_map_3d(fitter, attribution_matrix, bias_labels, player_metadata=No
         mode='markers+text', # Text ALWAYS visible for Factors
         name='Bias Factors',
         marker=dict(
-            size=11,
+            size=10,
             color='#FFD700', # Gold
             symbol='diamond',
             opacity=1.0,

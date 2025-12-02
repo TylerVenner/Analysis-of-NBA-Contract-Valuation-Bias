@@ -1,0 +1,153 @@
+9d9691d - Tyler Venner, 47 minutes ago : new run
+d5b1c50 - Macy Chen, 3 hours ago : utils page for plots
+8ff6a19 - Macy Chen, 4 hours ago : Removed emoji on page 6
+41e4318 - Macy Chen, 4 hours ago : Merge pull request #26 from TylerVenner/streamlit/Macy
+19a0f26 - Macy Chen, 4 hours ago : Updated page 3 of website to include plots for bias vs. performance factors
+e6a1fb7 - Macy Chen, 5 hours ago : Merge pull request #25 from TylerVenner/streamlit/Macy
+2feac21 - Macy Chen, 5 hours ago : Deleted unneeded util page and updated main to use advanced dataset
+54ac279 - Macy Chen, 6 hours ago : Merge pull request #24 from TylerVenner/streamlit/Macy
+a6ece56 - Leonel Garibay-Estrada, 6 hours ago : Merge pull request #23 from TylerVenner/leonel-dev
+554ebec - Leonel Garibay-Estrada, 6 hours ago : Merge branch 'main' into leonel-dev
+f52a2e0 - Macy Chen, 6 hours ago : Results/conclusions page for website
+25a1341 - LeonelGaribay-Estrada, 6 hours ago : Updated streamlit pages
+186390d - TylerVenner, 6 hours ago : Merge pull request #22 from TylerVenner/gary-pages
+ec6c773 - ggg808, 24 hours ago : Add Page 5, revise Page 4, and include final OLS table
+1926a7c - Tyler Venner, 3 days ago : deleted 2 duplicate rows
+116dd78 - Tyler Venner, 3 days ago : new dataset. had trouble with conflicts before. this is fix
+cf8f95b - Tyler Venner, 3 days ago : hello?
+31c34e2 - Tyler Venner, 3 days ago : oops, forgot to save data file
+faed78b - TylerVenner, 3 days ago : Merge pull request #21 from TylerVenner/more
+7d06f7a - Tyler Venner, 3 days ago : remove testing return statement
+3b8c5dc - Tyler Venner, 3 days ago : did feature tuning. model has now best r^2 i can get it to
+3ea83d6 - Tyler Venner, 3 days ago : new dataset
+3b8d3bc - Tyler Venner, 3 days ago : old report i forgot to add
+502dcad - Tyler Venner, 4 days ago : small change
+5f804e4 - TylerVenner, 4 days ago : Merge pull request #20 from TylerVenner/improving_DML_pipeline
+1f31910 - Tyler Venner, 4 days ago : new dataset, features, and methods
+cbcda90 - Tyler Venner, 4 days ago : now added CV and find best model
+8aafc41 - Tyler Venner, 4 days ago : running into problems
+227e346 - Tyler Venner, 4 days ago : updated file
+600e5aa - Tyler Venner, 4 days ago : updated X variables
+2eeddf5 - Tyler Venner, 4 days ago : new script and file for including games played, total minutes played, and total points
+cce933c - Tyler Venner, 4 days ago : updated model progression. poor fit even with good models. suggests we need more data.
+1ca0e87 - Tyler Venner, 4 days ago : gradient boosting methods for z model
+ec2f89b - Tyler Venner, 4 days ago : gradient boosting methods for f model
+fa43493 - Tyler Venner, 4 days ago : updated model progression. baseline regression and logistic
+c126665 - Tyler Venner, 4 days ago : updated model progression. baseline regression
+796f6c1 - Tyler Venner, 4 days ago : now added metric infrastructure. also included log loss and predicting prob for classificaiton
+7cf4b4c - Tyler Venner, 4 days ago : added metric framework for checking performance of model
+6d3052e - Tyler Venner, 7 days ago : updated page 3 to include embedded html. now automaticlly finds most recent
+d8757cb - Macy Chen, 7 days ago : Merge pull request #19 from TylerVenner/streamlit/visualizations
+c4b0d5d - Macy Chen, 12 days ago : Organized visuals into different pages
+c52f448 - Macy Chen, 12 days ago : Merge branch 'main' of https://github.com/TylerVenner/Analysis-of-NBA-Contract-Valuation-Bias into streamlit/visualizations
+86c5b4d - Macy Chen, 12 days ago : Added draft_round to z_cols
+8201273 - Macy Chen, 12 days ago : Visualizations
+0032d4e - Macy Chen, 12 days ago : Cleaned comments
+e830241 - Macy Chen, 12 days ago : Update table to correctly show draft number
+dc0fa40 - Macy Chen, 12 days ago : Visualization ideas for streamlit
+cbda5ed - Macy Chen, 12 days ago : Add run_pipeline function and main entrypoint to main.py for importing and standalone execution
+14a893e - Macy Chen, 12 days ago : Addded run_pipeline function and main entrypoint to main.py for importing and standalone execution
+1400ea1 - Macy Chen, 12 days ago : fixed data path config issue
+ec76bb3 - TylerVenner, 13 days ago : Merge pull request #18 from TylerVenner/3D_viz
+4142391 - Tyler Venner, 13 days ago : finalized output (with correct player names)
+f36ab47 - Tyler Venner, 13 days ago : final visualization included
+310e796 - Tyler Venner, 13 days ago : fixed bias mapping for running correct DML pipeline, training only on statistically depend players
+bc0d291 - Tyler Venner, 13 days ago : moved file around
+fb129e1 - Tyler Venner, 13 days ago : fixed some issues with imports and dropping columns twice
+f9e3103 - Tyler Venner, 13 days ago : renamed some directories for better imports
+ace77d2 - Tyler Venner, 13 days ago : now add orchistrator, taking all our BIAS mapping models
+36ea31e - Tyler Venner, 13 days ago : new module for visualization. NOW 3D
+f183359 - Tyler Venner, 13 days ago : new module for visualization
+eb50bfb - Tyler Venner, 13 days ago : added jit support for most expensive part: step function
+ab32687 - Tyler Venner, 13 days ago : MLE fitter for 3D map
+c239877 - Tyler Venner, 13 days ago : added DML output mapping to matrix L
+c277fbc - Tyler Venner, 13 days ago : new 3D file setup
+47bf7ff - Tyler Venner, 2 weeks ago : fixed relative file
+f3a42c1 - TylerVenner, 2 weeks ago : Merge pull request #16 from TylerVenner/update-streamlit-page4
+b77b4a3 - TylerVenner, 2 weeks ago : Merge pull request #17 from TylerVenner/data_eng_tyler
+81b69a7 - ggg808, 2 weeks ago : Update Streamlit Page_4.py with new DML visualizations
+10b6a8a - Tyler Venner, 2 weeks ago : updated report and new annotated dataset for contract category
+fe867ac - Tyler Venner, 2 weeks ago : added bunch of files to engineer YOS and contracts
+44f30f6 - Tyler Venner, 2 weeks ago : new report!
+09fca6d - LeonelGaribay-Estrada, 2 weeks ago : Updated Streamlit Page_1 with project summary and methods
+e121e12 - LeonelGaribay-Estrada, 2 weeks ago : Merge branch 'main' of https://github.com/TylerVenner/Analysis-of-NBA-Contract-Valuation-Bias into leonel-dev
+0480ffe - Tyler Venner, 2 weeks ago : updated for new columns, popularity, age, etc
+f2f5921 - LeonelGaribay-Estrada, 2 weeks ago : Resolve stash conflict: remove Page_1.py
+578c5f0 - LeonelGaribay-Estrada, 2 weeks ago : Resolve stash conflict and restore updated Page_1.py
+a4c2e0a - Tyler Venner, 3 weeks ago : pedegolical change
+ee9c380 - Tyler Venner, 3 weeks ago : removed some extra files which were accidently pushed downstream much earlier
+a7848a3 - TylerVenner, 3 weeks ago : Merge pull request #15 from TylerVenner/streamlit-setup
+343d2e0 - Tyler Venner, 3 weeks ago : example format and pages
+2419d8f - Tyler Venner, 3 weeks ago : new file setup
+e731041 - Tyler Venner, 3 weeks ago : modified file names for better naming convention
+19e52eb - Tyler Venner, 3 weeks ago : updated final OLS to run with special p-value calculation
+708eec8 - Tyler Venner, 3 weeks ago : completed main.py orchistration and validated module
+011d5a6 - Tyler Venner, 3 weeks ago : fixed all 4 modules according to the prompt
+d7d497e - TylerVenner, 3 weeks ago : Merge pull request #9 from TylerVenner/nba-bias-results
+321ee85 - TylerVenner, 3 weeks ago : Merge pull request #10 from TylerVenner/leo-train-f-model
+dc1b147 - TylerVenner, 3 weeks ago : Merge pull request #13 from TylerVenner/module2/train_h_models
+ad801a6 - TylerVenner, 3 weeks ago : Merge pull request #14 from TylerVenner/week6module3
+fda64ec - A1bert0, 3 weeks ago : Add files via upload
+1dcbeb9 - A1bert0, 3 weeks ago : Delete src/analysis/w6module3.py
+3aa6e1c - LeonelGaribay-Estrada, 3 weeks ago : Remove .vscode folder from repo
+5a54b99 - LeonelGaribay-Estrada, 3 weeks ago : Update train_f_model.py with new code
+af26b2c - Macy Chen, 3 weeks ago : pipeline for treatment models
+6f298a3 - LeonelGaribay-Estrada, 3 weeks ago : update: revised code in src/analysis
+bf7ca22 - A1bert0, 3 weeks ago : Add files via upload
+947c59e - Macy Chen, 3 weeks ago : file for train_h_models
+4b3ed67 - Tyler Venner, 3 weeks ago : updated week 7
+70eaaed - Tyler Venner, 3 weeks ago : first draft of week 7 goals
+2747001 - ggg808, 3 weeks ago : Adjust file format
+b6d6dfb - ggg808, 3 weeks ago : Move analysis code to src/analysis/
+ad85139 - ggg808, 3 weeks ago : Replace Week_6_Module_4.ipynb with Week_6_Module_4.py script
+27e88e1 - LeonelGaribay-Estrada, 3 weeks ago : Add train_f_model module under src/analysis for Salary ~ Performance regression
+aa4a79b - ggg808, 3 weeks ago : Add completed DML bias analysis Module 4
+5fbba41 - Tyler Venner, 3 weeks ago : small change
+f4cc881 - Tyler Venner, 3 weeks ago : updated column descriptions
+2a177a6 - Tyler Venner, 3 weeks ago : NEW CLEANED AND MERGED DATASET
+247f2c7 - Macy Chen, 4 weeks ago : Data collection prototyping
+8195653 - Macy Chen, 4 weeks ago : Deleted not needed file
+b1f32ed - TylerVenner, 4 weeks ago : Merge pull request #8 from TylerVenner/tyler_merge
+5b894cb - Tyler Venner, 4 weeks ago : finished merging
+ae51f2a - Tyler Venner, 4 weeks ago : new merged data
+51ac0ab - Tyler Venner, 4 weeks ago : small changes
+60305bd - Macy Chen, 4 weeks ago : added raw_salary_caps.csv to config
+13681da - Macy Chen, 4 weeks ago : Merge branch 'main' of https://github.com/TylerVenner/Analysis-of-NBA-Contract-Valuation-Bias into main
+309d3ac - Macy Chen, 4 weeks ago : Updated team_id
+70c8a14 - Leonel Garibay-Estrada, 4 weeks ago : Add files via upload
+b55cf9d - Macy Chen, 4 weeks ago : Added team_id
+30065cb - Tyler Venner, 4 weeks ago : new merge file
+c572952 - Macy Chen, 4 weeks ago : Delete data/raw/raw_player_stats.csv
+4d27714 - Leonel Garibay-Estrada, 4 weeks ago : Add files via upload
+1fe2776 - TylerVenner, 4 weeks ago : Merge pull request #7 from TylerVenner/feature/team_cap_scraping
+b89def2 - Macy Chen, 5 weeks ago : Updates csv file
+8664163 - Macy Chen, 5 weeks ago : Minor documentation changes
+d68f8e1 - Macy Chen, 5 weeks ago : Minor documentation changes
+59aca80 - Macy Chen, 5 weeks ago : Scraped salary cap data into raw_salary_caps.csv
+92eec86 - Macy Chen, 5 weeks ago : Updated project_root for correct file path
+667ec24 - TylerVenner, 5 weeks ago : Merge pull request #6 from TylerVenner/leonel-dev
+08f22b1 - TylerVenner, 5 weeks ago : Merge pull request #5 from TylerVenner/feature/module2-salary-py-file
+aa0deeb - TylerVenner, 5 weeks ago : Merge pull request #3 from TylerVenner/gary-player-data
+14c94cd - TylerVenner, 5 weeks ago : Merge pull request #2 from TylerVenner/module-1b
+58d352a - TylerVenner, 5 weeks ago : Merge pull request #4 from TylerVenner/feature/module2-salary-scraping
+703ad3d - ggg808, 5 weeks ago : Moved data_collection_get_nba_stats.py to src/data_collection/ as get_nba_stats.py
+3fff100 - ggg808, 5 weeks ago : Moved Player_Performance_raw.csv to data/raw/ directory
+dea8e5c - ggg808, 5 weeks ago : Added NBA player stats collection script
+135fbe9 - ggg808, 5 weeks ago : Added player performance raw data CSV
+0890b30 - Macy Chen, 5 weeks ago : Added function remove_two_way_players
+f4ce6fd - Macy Chen, 5 weeks ago : Updated path to save raw_player_salaries.csv in proper folder
+0386855 - A1bert0, 5 weeks ago : Module 1B
+d25798e - Macy Chen, 5 weeks ago : get salary python code
+aef6ee4 - LeonelGaribay-Estrada, 5 weeks ago : helper func and merge v1
+6ddcb29 - Tyler Venner, 6 weeks ago : fixed slightly changing columns names for different teams
+aec8d6d - Tyler Venner, 6 weeks ago : fixed LA clippers not scraping correctly
+9151ab8 - Tyler Venner, 6 weeks ago : full teams testing
+5ee4f5d - Tyler Venner, 6 weeks ago : small change. for educational purpose
+52e33aa - Tyler Venner, 6 weeks ago : added requests for team specific endpoints
+d9f370a - Tyler Venner, 6 weeks ago : tried scraping spotrac. not feasible. could only get 100 entries
+c37dfc6 - Tyler Venner, 6 weeks ago : give module roles
+f358562 - Tyler Venner, 6 weeks ago : file setup
+8ef6064 - Tyler Venner, 6 weeks ago : project plan. this is different from project proposal
+e7521c7 - Tyler Venner, 6 weeks ago : removed reports from not viewing
+e6778e2 - Tyler Venner, 6 weeks ago : added gitignore. will not view reports
+dee53f9 - TylerVenner, 6 weeks ago : Initial commit
