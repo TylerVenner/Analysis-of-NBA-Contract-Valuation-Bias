@@ -15,7 +15,7 @@ from src.analysis.run_final_ols import run_final_ols
 
 # --- Configuration ---
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_ROOT / "data" / "processed" / "master_dataset_cleaned.csv"
+DATA_PATH = PROJECT_ROOT / "data" / "processed" / "master_dataset_advanced.csv"
 
 # Y (Outcome)
 Y_COL = "Salary"
@@ -162,10 +162,44 @@ def run_pipeline():
 
     return df_clean, residuals_Y, residuals_Z, final_ols_results
 
+def compute_player_bias_effect(df_clean, residuals_Z, final_ols_results):
+    """
+    Attach the final debiased contextual salary effect to each player.
+    """
+
+    beta = final_ols_results.params
+    beta = beta.drop("const", errors="ignore")
+
+    common_cols = residuals_Z.columns.intersection(beta.index)
+    if len(common_cols) == 0:
+        raise ValueError("No matching columns between residuals_Z and beta.")
+
+    residuals_Z_aligned = residuals_Z[common_cols]
+    beta_aligned = beta[common_cols]
+
+    bias_effect = residuals_Z_aligned @ beta_aligned
+
+    df_out = df_clean.loc[bias_effect.index].copy()
+    df_out["Player_bias_effect"] = bias_effect.values
+
+    return df_out
+
 def main():
     """Main function to run the entire DML pipeline independently."""
     print("Starting DML Pipeline (Refined Z-Set)...")
     df_clean, residuals_Y, residuals_Z, final_ols_results = run_pipeline()
+
+    print(" FINAL OLS PARAMS: ")
+    print(final_ols_results.params)
+
+
+    df_with_bias = compute_player_bias_effect(
+        df_clean,
+        residuals_Z,
+        final_ols_results
+    )
+    OUTPUT_PATH = PROJECT_ROOT / "data" / "processed" / "streamlit_bias_map.csv"
+    df_with_bias.to_csv(OUTPUT_PATH, index=False)
 
     # --- 7. Show Final Results ---
     print("\n" + "="*80)
