@@ -12,18 +12,11 @@ st.set_page_config(
 # DATA LOADING
 DATA_PATH = "data/processed/streamlit_bias_map.csv"
 
-@st.cache_data
 def load_data():
     df = pd.read_csv(DATA_PATH)
     return df
 
 df = load_data()
-df.columns = df.columns.str.strip()
-
-df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
-df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
-df["YOS"] = pd.to_numeric(df["YOS"], errors="coerce")
-df["Player_bias_effect"] = pd.to_numeric(df["Player_bias_effect"], errors="coerce")
 
 # REQUIRED COLUMNS CHECK
 REQUIRED_COLS = [
@@ -40,6 +33,12 @@ missing = [c for c in REQUIRED_COLS if c not in df.columns]
 if missing:
     st.error(f"Missing required columns: {missing}")
     st.stop()
+
+df.columns = df.columns.str.strip()
+df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
+df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
+df["YOS"] = pd.to_numeric(df["YOS"], errors="coerce")
+df["Player_bias_effect"] = pd.to_numeric(df["Player_bias_effect"], errors="coerce")
 
 # CITY TO LAT / LON
 CITY_COORDS = {
