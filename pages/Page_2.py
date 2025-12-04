@@ -17,11 +17,11 @@ X_COLS = [
 
 Z_COLS = [
     "DRAFT_ROUND",
-    "DRAFT_NUMBER", 
-    "active_cap", 
-    "dead_cap", 
-    "OWNER_NET_WORTH_B", 
-    "Capacity", 
+    "DRAFT_NUMBER",
+    "active_cap",
+    "dead_cap",
+    "OWNER_NET_WORTH_B",
+    "Capacity",
     "STADIUM_YEAR_OPENED",
     "STADIUM_COST",
     "Followers",
@@ -80,7 +80,7 @@ all_features = X_COLS + Z_COLS
 
 # Keep only numeric columns
 numeric_features = [
-    col for col in all_features 
+    col for col in all_features
     if pd.api.types.is_numeric_dtype(df[col])
 ]
 
@@ -116,7 +116,7 @@ for col in Z_COLS:
 
 # Identify numeric features (X, Z, Y)
 numeric_cols = [
-    col for col in df.columns 
+    col for col in df.columns
     if pd.api.types.is_numeric_dtype(df[col]) and col not in categorical_zcols
 ]
 
@@ -223,27 +223,3 @@ fig_scatter_resid = px.scatter(
     title=f"Residuals: Salary vs {resid_feature}",
     labels={"y": "Residual Salary", "x": f"Residual {resid_feature}"}
 )
-st.plotly_chart(fig_scatter_resid, use_container_width=True)
-
-# Distribution of residuals
-st.subheader("Residual Distribution")
-fig_hist_resid = px.histogram(residuals_Y, nbins=40, title="Distribution of Salary Residuals")
-st.plotly_chart(fig_hist_resid, use_container_width=True)
-
-# Parallel coordinates on residuals
-st.subheader("Parallel Coordinates of Residuals")
-selected_resid_cols = st.multiselect(
-    "Select residual features",
-    options=list(residuals_Z.columns),
-    default=list(residuals_Z.columns[:5])
-)
-
-if selected_resid_cols:
-    fig_parallel_resid = px.parallel_coordinates(
-        residuals_Z,
-        dimensions=selected_resid_cols,
-        color=residuals_Y,
-        color_continuous_scale=px.colors.diverging.Tealrose,
-        title="Parallel Coordinates of Residuals"
-    )
-    st.plotly_chart(fig_parallel_resid, use_container_width=True)
