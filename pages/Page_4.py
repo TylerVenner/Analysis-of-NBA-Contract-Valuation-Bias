@@ -1,412 +1,312 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import altair as alt
-import matplotlib.pyplot as plt
-from pathlib import Path
+import plotly.express as px
 
-# 1. LOAD THE OLS TABLE
+# STREAMLIT CONFIG
 st.set_page_config(
-    page_title="Final Model Interpretation",
-    page_icon="⚖️",
+    page_title="NBA Salary Bias Map",
     layout="wide"
 )
 
-st.title("📈 Final Coefficients")
-st.subheader("Final OLS Results & Interpretation")
+# DATA LOADING
+DATA_PATH = "data/processed/streamlit_bias_map.csv"
 
-st.markdown("""
-This page presents the **final debiased OLS coefficients** that come from our  
-backend analysis pipeline (run in `main.py`), where we use:
+def load_data():
+    df = pd.read_csv(DATA_PATH)
+    return df
 
-- Gradient Boosting models to remove nonlinear performance effects  
-- Treatment models to orthogonalize contextual variables  
-- A final OLS regression on the debiased residuals (HC3 robust)  
+df = load_data()
 
-The results represent the **market price of structural bias factors** after controlling
-for performance.
-""")
+# REQUIRED COLUMNS CHECK
+REQUIRED_COLS = [
+    "PLAYER_NAME",
+    "City",
+    "Salary",
+    "Player_bias_effect",
+    "TEAM_NAME",
+    "Age",
+    "YOS"
+]
 
-OLS_PATH = Path("data/processed/final_ols_table.csv")
-
-@st.cache_data
-def load_ols_table(path: Path):
-    return pd.read_csv(path)
-
-if not OLS_PATH.exists():
-    st.error("OLS table not found! Run `python main.py` to generate `final_ols_table.csv`.")
+missing = [c for c in REQUIRED_COLS if c not in df.columns]
+if missing:
+    st.error(f"Missing required columns: {missing}")
     st.stop()
 
-df_coef = load_ols_table(OLS_PATH)
+df.columns = df.columns.str.strip()
+df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
+df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
+df["YOS"] = pd.to_numeric(df["YOS"], errors="coerce")
+df["Player_bias_effect"] = pd.to_numeric(df["Player_bias_effect"], errors="coerce")
 
-df_coef = df_coef.rename(columns={
-    "Variable": "variable",
-    "coef": "coef",
-    "std_err": "std_err",
-    "p_value": "p_value",
-    "CI_0.025": "CI_lower",
-    "CI_0.975": "CI_upper"
-})
+# CITY TO LAT / LON
+CITY_COORDS = {
+    "Atlanta, GA": (33.7490, -84.3880),
+    "Boston, MA": (42.3601, -71.0589),
+    "Brooklyn, NY": (40.6782, -73.9442),
+    "Charlotte, NC": (35.2271, -80.8431),
+    "Chicago, IL": (41.8781, -87.6298),
+    "Cleveland, OH": (41.4993, -81.6944),
+    "Dallas, TX": (32.7767, -96.7970),
+    "Denver, CO": (39.7392, -104.9903),
+    "Detroit, MI": (42.3314, -83.0458),
+    "Houston, TX": (29.7604, -95.3698),
+    "Indianapolis, IN": (39.7684, -86.1581),
+    "Los Angeles, CA": (34.0430, -118.2673),
+    "Inglewood, CA": (33.9618, -118.3534),
+    "Memphis, TN": (35.1495, -90.0490),
+    "Miami, FL": (25.7617, -80.1918),
+    "Milwaukee, WI": (43.0389, -87.9065),
+    "Minneapolis, MN": (44.9778, -93.2650),
+    "New Orleans, LA": (29.9511, -90.0715),
+    "New York, NY": (40.7505, -73.9934),
+    "Oklahoma City, OK": (35.4676, -97.5164),
+    "Orlando, FL": (28.5383, -81.3792),
+    "Philadelphia, PA": (39.9526, -75.1652),
+    "Phoenix, AZ": (33.4484, -112.0740),
+    "Portland, OR": (45.5051, -122.6750),
+    "Sacramento, CA": (38.5816, -121.4944),
+    "San Antonio, TX": (29.4241, -98.4936),
+    "San Francisco, CA": (37.7680, -122.3877),
+    "Toronto, ON": (43.6532, -79.3832),
+    "Salt Lake City, UT": (40.7608, -111.8910),
+    "Washington, D.C.": (38.9072, -77.0369)
+}
 
-df_coef = df_coef.set_index("variable")
+df["lat"] = df["City"].map(lambda x: CITY_COORDS.get(x, (None, None))[0])
+df["lon"] = df["City"].map(lambda x: CITY_COORDS.get(x, (None, None))[1])
 
-# 2. DISPLAY RAW TABLE
-st.header("1. Final OLS Regression Table")
+# JITTER FOR PLAYER VIEW
+np.random.seed(13)
 
-st.markdown("""
-These coefficients quantify the **impact of each bias factor** on the remaining  
-salary unexplained by performance (ε_Y).  
+jitter_scale = 0.18
+df["lat_jitter"] = df["lat"] + np.random.normal(0, 0.08, len(df))
+df["lon_jitter"] = df["lon"] + np.random.normal(0, 0.08, len(df))
 
-- **Positive coefficient → salary premium**  
-- **Negative coefficient → salary penalty**  
-- **p < 0.05 → statistically significant**  
-""")
+# SIDEBAR FILTERS
+st.sidebar.header("Filters")
 
-st.dataframe(
-    df_coef.style.format({
-        "coef": "{:.5f}",
-        "std_err": "{:.5f}",
-        "p_value": "{:.3f}"
-    }),
-    use_container_width=True
+min_salary, max_salary = st.sidebar.slider(
+    "Salary Range",
+    int(df["Salary"].min()),
+    int(df["Salary"].max()),
+    (int(df["Salary"].min()), int(df["Salary"].max()))
 )
 
-# 3. COEFFICIENT VISUALIZATION (BAR PLOTS)
-st.header("2. Visualizing Effect Sizes")
+min_age, max_age = st.sidebar.slider(
+    "Age Range",
+    int(df["Age"].min()),
+    int(df["Age"].max()),
+    (int(df["Age"].min()), int(df["Age"].max()))
+)
 
-viz_df = df_coef.copy()
-viz_df["abs_coef"] = viz_df["coef"].abs()
+size_by_salary = st.sidebar.toggle(
+    "Scale dot size by Salary",
+    value=False
+)
 
-# Signed coefficients
+df = df[
+    (df["Salary"] >= min_salary) &
+    (df["Salary"] <= max_salary) &
+    (df["Age"] >= min_age) &
+    (df["Age"] <= max_age)
+]
+view_mode = st.sidebar.radio(
+    "Map View",
+    ["Team Average", "Individual Players"]
+)
+
+# MAIN TITLE
+st.title("NBA Salary Bias Map")
+st.subheader("How Context Shapes Player Pay Beyond On-Court Performance")
+
+st.markdown("""
+This visualization shows how much a player’s salary is influenced by **contextual/bias factors** after controlling for on-court performance using Double Machine Learning (DML).
+
+The quantity displayed, *Bias Effect*, captures the portion of salary that comes from where a player plays, who owns the team, how visible they are, and how they entered the league, etc, not how well they perform on the court.
+""")
+
+st.markdown("---")
+
+st.markdown("""
+### How to Read This Map
+
+Each dot represents a player located at their team’s city.
+
+- **Red** → Player is **paid more than expected** after controlling for performance. 
+- **Blue** → Player is **paid less than expected** after controlling for performance. 
+- **White / Neutral** → Salary closely matches expected value.
+""")
+
+st.markdown("---")
+
+st.markdown("""
+### What Does a Positive Bias Effect Mean?
+
+A **positive Bias Effect** means a player is being **paid more than their on-court performance alone would predict**.  
+In these cases, **context is boosting salary**.
+
+Common contributing factors include:
+- Playing in a big-market city (e.g., New York, Los Angeles)
+- A wealthy team owner
+- High draft pedigree
+- Strong media presence or social media following
+""")
+
+st.markdown("---")
+
+st.markdown("""
+### What Does a Negative Bias Effect Mean?
+
+A **negative Bias Effect** means a player is being **paid less than their performance alone would predict**.  
+Here, **context is suppressing salary**.
+
+Common contributing factors include:
+- Playing in a small-market city
+- Being a late draft pick or undrafted
+- Limited media exposure
+- International background
+- A low-visibility role
+""")
+
+st.markdown("---")
+
+st.caption("""
+Important: This map does **not** measure how good a player is.  
+It isolates the **non-performance portion of salary** driven by external context.
+""")
+
+# TEAM AGGREGATION
+team_df = df.groupby(
+    ["TEAM_NAME", "City", "lat", "lon"], as_index=False
+).agg(
+    Avg_Bias=("Player_bias_effect", "mean"),
+    Avg_Salary=("Salary", "mean"),
+    Player_Count=("PLAYER_NAME", "count")
+)
+
+# COLOR SETTING
+if view_mode == "Team Average":
+    plot_df = team_df.copy()
+    color_col = "Avg_Bias"
+else:
+    plot_df = df.copy()
+    color_col = "Player_bias_effect"
+
+# CREATE MAP
+if view_mode == "Team Average":
+    fig = px.scatter_mapbox(
+        plot_df,
+        lat="lat",
+        lon="lon",
+        color="Avg_Bias",
+        hover_name="TEAM_NAME",
+        hover_data={
+            "City": True,
+            "Player_Count": True,
+            "Avg_Salary": ":,.0f",
+            "Avg_Bias": ":.3f",
+            "lat": False,
+            "lon": False
+        },
+        zoom=3,
+        height=720,
+        color_continuous_scale="RdBu_r",
+        color_continuous_midpoint=0,
+        size_max=50,
+    )
+else:
+    fig = px.scatter_mapbox(
+        plot_df.sort_values(by="Player_bias_effect"),
+        lat="lat_jitter",
+        lon="lon_jitter",
+        color="Player_bias_effect",
+        hover_name="PLAYER_NAME",
+        hover_data={
+            "TEAM_NAME": True,
+            "Age": ":.0f",
+            "Salary": ":,.0f",
+            "YOS": True,
+            "Player_bias_effect": ":.3f",
+            "lat_jitter": False,
+            "lon_jitter": False
+        },
+        zoom=3,
+        height=720,
+        color_continuous_scale="RdBu_r",
+        color_continuous_midpoint=0,
+        size_max=30,
+    )
+
+if size_by_salary:
+    if view_mode == "Team Average":
+        fig.update_traces(marker=dict(
+            size=(plot_df["Avg_Salary"] / plot_df["Avg_Salary"].max()) * 40 + 10
+        ))
+    else:
+        fig.update_traces(marker=dict(
+            size=(plot_df["Salary"] / plot_df["Salary"].max()) * 30 + 6
+        ))
+else:
+    if view_mode == "Team Average":
+        fig.update_traces(marker=dict(size=20)) # slightly larger for teams
+    else:
+        fig.update_traces(marker=dict(size=10)) # players
+
+fig.update_layout(
+    mapbox_style="carto-positron",
+    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("---")
+st.header("Most Overpaid & Underpaid Players")
+
+# Clean display dataframe
+display_cols = [
+    "PLAYER_NAME",
+    "TEAM_NAME",
+    "City",
+    "Salary",
+    "Player_bias_effect",
+    "Age",
+    "YOS"
+]
+
+display_df = df[display_cols].copy()
+
+# Formatting
+display_df["Salary"] = display_df["Salary"].map("${:,.0f}".format)
+display_df["Player_bias_effect"] = display_df["Player_bias_effect"].round(4)
+
+# Top 10 Overpaid
+top_overpaid = display_df.sort_values(
+    by="Player_bias_effect", ascending=False
+).head(10)
+
+# Top 10 Underpaid
+top_underpaid = display_df.sort_values(
+    by="Player_bias_effect", ascending=True
+).head(10)
+
+# Display side-by-side
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### Signed Coefficients (Premium vs Penalty)")
-    chart_signed = (
-        alt.Chart(viz_df.reset_index())
-        .mark_bar()
-        .encode(
-            x=alt.X("coef:Q", title="Coefficient (log-salary)"),
-            y=alt.Y("variable:N", sort="-x"),
-            tooltip=["variable", "coef", "std_err", "p_value"]
-        )
-    )
-    st.altair_chart(chart_signed, use_container_width=True)
-
-# 3. PLAYER STORY & INTERPRETATION SECTION
-st.header("3. Player-Specific Interpretation")
-
-st.markdown("""
-Select a player to see how our structural bias coefficients **interact with their situation**.  
-We compare the player to **league averages** on Age, Draft position, owner wealth, and market size,  
-and interpret what a **positive or negative coefficient** means for them.
-
-We **do not treat the coefficient times the raw value as a literal salary change**.  
-Instead, we use the **sign** of the coefficient and where the player sits relative to the league  
-to tell a qualitative story about premiums or penalties.
-""")
-
-# Load player-level data
-PLAYER_PATH = Path("data/processed/master_dataset_advanced_v2.csv")
-
-@st.cache_data
-def load_player_data(path: Path):
-    df = pd.read_csv(path)
-    df = df.replace("Undrafted", 61)
-    df["DRAFT_NUMBER"] = pd.to_numeric(df["DRAFT_NUMBER"], errors="coerce")
-    # make sure numeric where possible
-    for col in ["Age", "OWNER_NET_WORTH_B", "Capacity", "Followers"]:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-    return df
-
-player_df = load_player_data(PLAYER_PATH)
-
-# Use the correct name column
-PLAYER_COL = "PLAYER_NAME"
-
-if PLAYER_COL not in player_df.columns:
-    st.error(f"Expected a column '{PLAYER_COL}' in the player dataset.")
-    st.write("Available columns:", list(player_df.columns))
-    st.stop()
-
-# league medians for context
-league_medians = {}
-for col in ["Age", "DRAFT_NUMBER", "OWNER_NET_WORTH_B", "Capacity"]:
-    if col in player_df.columns:
-        league_medians[col] = player_df[col].median()
-
-# Player dropdown
-player_name = st.selectbox(
-    "Choose a player to analyze:",
-    sorted(player_df[PLAYER_COL].dropna().unique())
-)
-
-player_row = player_df[player_df[PLAYER_COL] == player_name].iloc[0]
-
-# Small snapshot table
-snapshot_cols = [c for c in [
-    PLAYER_COL, "Team", "Age", "DRAFT_NUMBER", "DRAFT_ROUND",
-    "Salary", "OWNER_NET_WORTH_B", "Capacity", "Followers", "is_USA"
-] if c in player_df.columns]
-
-st.subheader(f"Context for **{player_name}**")
-st.dataframe(player_row[snapshot_cols].to_frame().T)
-
-st.markdown("### How the bias coefficients apply to this player")
-
-stories = []
-
-def add_story(text: str):
-    stories.append(text.strip())
-
-# AGE
-if "Age" in player_row.index and "Age" in df_coef.index and "Age" in league_medians:
-    age = player_row["Age"]
-    med_age = league_medians["Age"]
-    gamma_age = df_coef.loc["Age", "coef"]
-    sig_age = df_coef.loc["Age", "p_value"] < 0.05
-
-    if pd.notna(age):
-        if gamma_age > 0:
-            if age > med_age:
-                add_story(f"""
-**Age (Veteran premium)**  
-- {player_name} is **{age:.1f} years old**, older than the league median of **{med_age:.1f}**.  
-- Our OLS coefficient for Age is **{gamma_age:.3f}** ({'significant' if sig_age else 'not significant'} and positive).  
-- This suggests that, *holding performance fixed*, **older veterans tend to be paid more than younger players**.  
-  In other words, players like {player_name} benefit from a **veteran premium** in salary negotiations.
-""")
-            else:
-                add_story(f"""
-**Age (Waiting for the veteran bump)**  
-- {player_name} is **{age:.1f} years old**, younger than the league median of **{med_age:.1f}**.  
-- Age has a **positive coefficient ({gamma_age:.3f})**, meaning teams usually pay **more** for veterans even after controlling for stats.  
-- Young players like {player_name} **do not yet fully benefit from that veteran premium**, even if their performance is strong.
-""")
-        elif gamma_age < 0:
-            add_story(f"""
-**Age (Veteran discount)**  
-- The coefficient on Age is **negative ({gamma_age:.3f})**, meaning that, after controlling for performance,  
-  **older players tend to be paid less** than younger ones.  
-- This would indicate a league-wide tendency to **undervalue aging players** relative to their box-score impact.
-""")
-
-# DRAFT NUMBER
-if "DRAFT_NUMBER" in player_row.index and "DRAFT_NUMBER" in df_coef.index and "DRAFT_NUMBER" in league_medians:
-    draft_no = player_row["DRAFT_NUMBER"]
-    med_draft = league_medians["DRAFT_NUMBER"]
-    gamma_draft = df_coef.loc["DRAFT_NUMBER", "coef"]
-    sig_draft = df_coef.loc["DRAFT_NUMBER", "p_value"] < 0.05
-
-    if pd.notna(draft_no):
-        if gamma_draft < 0:
-            if draft_no > med_draft:
-                add_story(f"""
-**Draft position (Late-pick penalty)**  
-- {player_name} was drafted **#{int(draft_no)}**, later than the median pick of **#{int(med_draft)}**.  
-- The coefficient on draft number is **negative ({gamma_draft:.3f})** ({'significant' if sig_draft else 'not significant'}).  
-- This means that, for the same performance, **later picks tend to earn less** than early picks.  
-  Players like {player_name} face a **structural late-pick penalty** in residual salary.
-""")
-            else:
-                add_story(f"""
-**Draft position (Pedigree premium)**  
-- {player_name} was drafted **#{int(draft_no)}**, earlier than the median pick of **#{int(med_draft)}**.  
-- With a **negative draft coefficient ({gamma_draft:.3f})**, early picks are rewarded with **higher salaries**  
-  even after accounting for their on-court performance.  
-  {player_name} benefits from this **draft pedigree premium**.
-""")
-        elif gamma_draft > 0:
-            add_story(f"""
-**Draft position (Unusual pattern)**  
-- The draft coefficient is **positive ({gamma_draft:.3f})**, which would mean later picks earn *more* than early picks  
-  after controlling for performance. That would be an unusual league pattern and may indicate model instability.
-""")
-
-# OWNER WEALTH
-if "OWNER_NET_WORTH_B" in player_row.index and "OWNER_NET_WORTH_B" in df_coef.index and "OWNER_NET_WORTH_B" in league_medians:
-    own_w = player_row["OWNER_NET_WORTH_B"]
-    med_own = league_medians["OWNER_NET_WORTH_B"]
-    gamma_own = df_coef.loc["OWNER_NET_WORTH_B", "coef"]
-
-    if pd.notna(own_w):
-        if gamma_own > 0:
-            if own_w > med_own:
-                add_story(f"""
-**Owner wealth (Deep-pocket premium)**  
-- {player_name}'s team owner is worth about **${own_w:.1f}B**, above the league median of **${med_own:.1f}B**.  
-- The **positive coefficient on owner wealth ({gamma_own:.3f})** suggests rich owners are willing to **overpay**  
-  relative to pure performance. Players on these teams, like {player_name}, enjoy a **deep-pocket premium**.
-""")
-            else:
-                add_story(f"""
-**Owner wealth (Budget constraint)**  
-- {player_name}'s team owner wealth (~**${own_w:.1f}B**) is below the league median of **${med_own:.1f}B**.  
-- Since the coefficient on owner wealth is **positive ({gamma_own:.3f})**, players on smaller-budget teams  
-  face a mild **structural headwind** in salary, compared to equally productive players on richer teams.
-""")
-
-# MARKET SIZE / CAPACITY
-if "Capacity" in player_row.index and "Capacity" in df_coef.index and "Capacity" in league_medians:
-    cap = player_row["Capacity"]
-    med_cap = league_medians["Capacity"]
-    gamma_cap = df_coef.loc["Capacity", "coef"]
-
-    if pd.notna(cap):
-        if gamma_cap > 0:
-            if cap > med_cap:
-                add_story(f"""
-**Market size (Big-market boost)**  
-- {player_name} plays in an arena with capacity **{int(cap):,}**, above the league median of **{int(med_cap):,}** seats.  
-- A **positive coefficient on Capacity ({gamma_cap:.3f})** means big markets tend to **push salaries up**  
-  beyond what performance alone would justify. {player_name} benefits from a **big-market boost**.
-""")
-            else:
-                add_story(f"""
-**Market size (Small-market discount)**  
-- {player_name}'s arena capacity **({int(cap):,})** is smaller than the league median of **{int(med_cap):,}**.  
-- With a **positive Capacity coefficient ({gamma_cap:.3f})**, players on small-market teams  
-  tend to face a **small-market discount** in salary residuals.
-""")
-
-# NATIONALITY
-if "is_USA" in player_row.index and "is_USA" in df_coef.index:
-    nat_flag = player_row["is_USA"]
-    gamma_nat = df_coef.loc["is_USA", "coef"]
-
-    if nat_flag == 1:
-        nat_label = "American"
-    else:
-        nat_label = "international"
-
-    if gamma_nat < 0:
-        add_story(f"""
-**Nationality (International penalty)**  
-- {player_name} is **{nat_label}**.  
-- The coefficient on `is_USA` is **negative ({gamma_nat:.3f})**, suggesting that, after controlling for performance,  
-  **international players earn slightly less** than otherwise similar American players.
-""")
-    elif gamma_nat > 0:
-        add_story(f"""
-**Nationality (American premium)**  
-- {player_name} is **{nat_label}**.  
-- A **positive `is_USA` coefficient ({gamma_nat:.3f})** would mean American players tend to receive a small  
-  **structural salary premium** over similar international players.
-""")
-
-# Fallback if no stories
-if not stories:
-    st.info("Not enough contextual information is available for this player to generate a narrative.")
-else:
-    for s in stories:
-        st.markdown(s)
-        st.markdown("---")
-
-
-# 4. Structural Bias Score by Factor (Simple Visualization)
-
-st.header("4. Structural Bias Score by Factor")
-
-st.markdown("""
-This chart summarizes how each structural factor contributes to a **salary premium or penalty**
-for the selected player, relative to the league median.
-
-For each factor, we compute a simple score:
-
-> (Player value − League median) × OLS coefficient
-
-- **Positive score → premium** (player is structurally favored)
-- **Negative score → penalty** (player is structurally disadvantaged)
-
-This is not an exact dollar amount, but a **directional index** of how context and coefficients
-combine for this player.
-""")
-
-factor_map = [
-    ("Age", "Age"),
-    ("Draft Number", "DRAFT_NUMBER"),
-    ("Owner Net Worth (B$)", "OWNER_NET_WORTH_B"),
-    ("Arena Capacity", "Capacity"),
-    ("Followers", "Followers"),
-    ("Nationality (is_USA)", "is_USA"),
-]
-
-score_rows = []
-for label, col in factor_map:
-    if col in player_row.index and col in league_medians and col in df_coef.index:
-        val = player_row[col]
-        med = league_medians[col]
-        gamma = df_coef.loc[col, "coef"]
-
-        if pd.notna(val) and pd.notna(med) and pd.notna(gamma):
-            try:
-                val = float(val)
-                med = float(med)
-                gamma = float(gamma)
-            except Exception:
-                continue
-
-            delta = val - med
-            score = delta * gamma
-
-            if abs(score) < 1e-8:
-                direction = "Neutral"
-            elif score > 0:
-                direction = "Premium"
-            else:
-                direction = "Penalty"
-
-            score_rows.append({
-                "Factor": label,
-                "Score": score,
-                "Delta_vs_Median": delta,
-                "Coefficient": gamma,
-                "Direction": direction,
-            })
-
-score_df = pd.DataFrame(score_rows)
-
-if score_df.empty:
-    st.info("Not enough information to compute structural bias scores for this player.")
-else:
-    # Sort by absolute impact
-    score_df = score_df.sort_values("Score", ascending=True)
-
-    st.markdown("### Structural bias index by factor")
-
-    chart = (
-        alt.Chart(score_df)
-        .mark_bar()
-        .encode(
-            x=alt.X("Score:Q", title="Structural bias score"),
-            y=alt.Y("Factor:N", sort=list(score_df["Factor"])),
-            color=alt.Color("Direction:N", scale=alt.Scale(domain=["Penalty", "Neutral", "Premium"]),
-                            legend=alt.Legend(title="Effect")),
-            tooltip=[
-                "Factor",
-                alt.Tooltip("Score:Q", format=".4f", title="Bias score"),
-                alt.Tooltip("Delta_vs_Median:Q", format=".2f", title="Player - median"),
-                alt.Tooltip("Coefficient:Q", format=".4f", title="OLS coefficient"),
-                "Direction",
-            ]
-        )
-        .properties(height=250)
+    st.subheader("Top 10 Most Overpaid")
+    st.dataframe(
+        top_overpaid,
+        use_container_width=True,
+        hide_index=True
     )
 
-    # Add zero line for reference
-    zero_rule = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(strokeDash=[4, 2]).encode(x="x:Q")
+with col2:
+    st.subheader("Top 10 Most Underpaid")
+    st.dataframe(
+        top_underpaid,
+        use_container_width=True,
+        hide_index=True
+    )
 
-    st.altair_chart(chart + zero_rule, use_container_width=True)
-
-    st.markdown(f"""
-For **{player_name}**, bars to the **right** of zero indicate structural **premiums**,  
-while bars to the **left** indicate structural **penalties**, after controlling for performance.
-
-- A large positive bar means the player is **above the league median on a factor with a positive coefficient**,  
-  or **below the median on a factor with a negative coefficient** (both create a premium).
-- A large negative bar means the opposite: that contextual factor pushes the player toward a **salary discount**.
-
-This visualization connects the **OLS coefficients** directly to the **player's own situation**,
-showing which structural factors help or hurt them the most.
-""")
