@@ -2,6 +2,70 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import streamlit.components.v1 as components
+import os
+import glob
+from pathlib import Path
+
+DATA_PATH = "data/processed/master_dataset_advanced_v2.csv"
+
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv(DATA_PATH)
+    return df
+
+
+df = load_data()
+
+
+# --- Helper Functions ---
+def get_latest_bias_map_path(base_dir="reports/maps"):
+    """
+    Finds the most recently generated bias map HTML file.
+    Assumes structure: reports/maps/run_{timestamp}/bias_attribution_map_3d.html
+    """
+    # Search for all html files matching the pattern
+    # Adjust 'reports/maps' relative to where you run 'streamlit run app.py'
+    # If app.py is in root, use 'reports/maps'. If in src, use '../reports/maps'
+
+    # Let's try to be robust and look relative to this script file
+    current_dir = Path(__file__).parent.resolve()
+
+    # Check if we are in 'src' or root. Assuming reports is in root.
+    # Adjust this path if your folder structure is different!
+    project_root = current_dir  # Modify this based on where app.py lives vs reports
+
+    # Example: If app.py is in project root
+    search_pattern = os.path.join("reports", "maps", "run_*", "bias_attribution_map_3d.html")
+
+    files = glob.glob(search_pattern)
+
+    if not files:
+        # Try searching one level up if not found (in case app.py is in a subfolder)
+        search_pattern = os.path.join("..", "reports", "maps", "run_*", "bias_attribution_map_3d.html")
+        files = glob.glob(search_pattern)
+
+    if not files:
+        return None
+
+    # Get the latest file based on creation time or name (timestamp in name ensures sort order)
+    latest_file = max(files, key=os.path.getctime)
+    return latest_file
+
+
+def render_interactive_map(file_path):
+    """Reads an HTML file and renders it as a Streamlit component."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+
+        # Height should match the height set in visualizer.py (900px)
+        components.html(html_content, height=900, scrolling=False)
+        st.success(f"Loaded map from: `{file_path}`")
+    except Exception as e:
+        st.error(f"Error loading map: {e}")
+
 
 # STREAMLIT CONFIG
 st.set_page_config(
@@ -129,6 +193,92 @@ The quantity displayed, *Bias Effect*, captures the portion of salary that comes
 
 st.markdown("---")
 
+st.subheader(" Latent Structure of Bias: Attribution Matrix → 3D Map")
+
+st.markdown("""
+### Understanding the Attribution Matrix
+
+Before we can visualize bias, we first translate our Double Machine Learning (DML) results into an **attribution matrix**.
+
+This matrix does two things:
+
+1. **Bias Factor Loadings (L̂ᵢⱼ)**  
+   For each player *i* and each bias factor *j*, we compute how “unusual” the player is on that factor **after controlling for their basketball performance**.  
+   - High (positive or negative) values of L̂ᵢⱼ mean a player stands out on that bias factor.  
+   - Low values mean they are typical on that dimension.
+
+2. **Market Prices of Bias (γ̂ⱼ)**  
+   For each bias factor, we estimate how much that factor “costs” in the contract market—how many dollars of salary movement are associated with that bias.
+
+The attribution matrix is therefore a high-dimensional representation of the contract market:
+- **Rows = Players**  
+- **Columns = Bias Factors**  
+- **Cells = Player-specific bias exposures**
+
+In this space, every player becomes a point defined by their L̂ᵢⱼ values.
+
+---
+
+### Why a 3D Map?
+
+The attribution matrix is too high-dimensional to interpret directly.  
+To make the structure visible, we compress it using a dimensionality-reduction method that preserves:
+
+- similarities between players,  
+- similarities between bias factors,  
+- and the overall geometry of the “bias landscape.”
+
+The result is a **3D latent map** that reveals how economic forces shape NBA contracts.
+
+---
+
+### How to Read the Map
+
+- **Diamonds = Bias Factors (Anchors)**  
+  These are the visual representations of the columns of the attribution matrix. Their placement summarizes where each bias factor lies in the latent space.
+
+- **Dots = Players**  
+  Each dot is a player, positioned based on their entire bias profile (their row in the attribution matrix).
+
+- **Proximity = Shared Bias Exposure**  
+  Players near each other experience similar combinations of bias factors.  
+  Players near a diamond are strongly influenced by that specific bias.
+
+- **Color = Contract Type**  
+  This helps reveal whether certain contract structures systematically fall into specific regions of the bias space.
+
+In essence, this map creates a **geography of contract bias**—a visual landscape where players cluster around the economic forces that shape their pay.
+
+---
+
+### Interactive 3D Map
+""")
+
+# Automatically find and load the latest map
+latest_map_path = get_latest_bias_map_path()
+
+if latest_map_path and os.path.exists(latest_map_path):
+    render_interactive_map(latest_map_path)
+else:
+    st.warning("No generated bias map found. Please run `src/scripts/run_bias_mapping.py` first.")
+
+    # Fallback: Manual Upload
+    st.write("Or upload a map HTML file manually:")
+    uploaded_file = st.file_uploader("Choose an HTML file", type="html")
+    if uploaded_file is not None:
+        string_data = uploaded_file.getvalue().decode("utf-8")
+        components.html(string_data, height=900)
+
+
+
+st.markdown("---")
+
+st.caption("""
+Important: This map does **not** measure how good a player is.  
+It isolates the **non-performance portion of salary** driven by external context.
+""")
+
+
 st.markdown("""
 ### How to Read This Map
 
@@ -168,13 +318,6 @@ Common contributing factors include:
 - Limited media exposure
 - International background
 - A low-visibility role
-""")
-
-st.markdown("---")
-
-st.caption("""
-Important: This map does **not** measure how good a player is.  
-It isolates the **non-performance portion of salary** driven by external context.
 """)
 
 # TEAM AGGREGATION
@@ -260,6 +403,30 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("---")
+
+# Clean display dataframe
+display_cols = [
+    "PLAYER_NAME",
+    "TEAM_NAME",
+    "City",
+    "Salary",
+    "Player_bias_effect",
+    "Age",
+    "YOS"
+]
+
+display_df = df[display_cols].copy()
+
+# Formatting
+display_df["Salary"] = display_df["Salary"].map("${:,.0f}".format)
+display_df["Player_bias_effect"] = display_df["Player_bias_effect"].round(4)
+
+# Top 10 Overpaid
+top_overpaid = display_df.sort_values(
+    by="Player_bias_effect", ascending=False
+).head(10)
 
 st.markdown("---")
 st.header("Most Overpaid & Underpaid Players")
