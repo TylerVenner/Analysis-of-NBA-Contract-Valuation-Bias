@@ -286,7 +286,7 @@ def main():
         attribution_matrix=L_matrix,
         bias_labels=L_matrix.columns.tolist(),
         player_metadata=player_meta,
-        title="Bias Attribution Map (Stratified DML-PULS)",
+        title="Bias Attribution Map",
         output_path=plot_path
     )
     

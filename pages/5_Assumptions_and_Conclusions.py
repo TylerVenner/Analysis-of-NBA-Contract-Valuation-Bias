@@ -1,155 +1,149 @@
 import streamlit as st
-from pathlib import Path
 
 st.set_page_config(page_title="Conclusion & Assumptions", page_icon="📘", layout="wide")
 
-st.title("Conclusion & Model Assumptions")
+# --- HERO SECTION ---
+st.title("📘 Conclusions & Future Directions")
+st.markdown("""
+**The Big Idea:** We moved from asking *"Does bias exist?"* to asking *"What is the **geometry** of bias?"*
+""")
 
-# 1. Why this model is important
+st.divider()
 
-st.header("1. Why This Model Matters")
+# --- 1. THE PARADIGM SHIFT (Before vs After) ---
+st.header("1. The Shift: From Lists to Maps")
 
-st.markdown(
-    """
-### A. Traditional statistical models miss the bigger picture
-Most salary studies stop at a **wall of coefficients**.  
-These tables can tell you *which* factors matter (age, draft number, market size),  
-but they cannot tell you:
+col_old, col_new = st.columns(2)
 
-- how these forces are connected,  
-- which factors act together as a larger structural force,  
-- or which types of players are shaped by the same kinds of bias.
+with col_old:
+    st.error("The Old Way: 'Wall of Coefficients'")
+    st.markdown("""
+    * **Output:** A static table of p-values.
+    * **Limit:** Tells you *if* a factor matters, but not how it connects to others.
+    * **Failure:** Breaks when facing **Deterministic Contracts** (Rookies/Max deals).
+    * **Result:** A fragmented view of the market.
+    """)
 
----
+with col_new:
+    st.success("Our Solution: 'Bias Topology'")
+    st.markdown("""
+    * **Output:** An interactive 3D Map and Geographic Heatmap.
+    * **Insight:** Reveals structural "Neighborhoods" (e.g., The Veteran Cluster).
+    * **Fix:** Uses **Stratified DML** to learn prices purely from the free market.
+    * **Result:** A unified theory of NBA value.
+    """)
 
-### B. Our model solves a fundamental structural problem
-NBA salaries include **deterministic contracts**:
+st.divider()
 
-- Rookie Scale deals  
-- Maximum contracts  
-- Minimum deals  
+# --- 2. CRITICAL ASSUMPTIONS (Tabs for Organization) ---
+st.header("2. Under the Hood: Assumptions & Limitations")
+st.caption("Every model is a simplification of reality. Here is where ours simplifies.")
 
-These salaries are set by rules, not the free market.  
-Including them in a regular regression **breaks the model**.
+tab_assume, tab_limit, tab_future = st.tabs(["⚠️ The Core Assumption", "🚧 Limitations", "🔮 Future Work"])
 
-Our framework fixes this by using a **Learn–Apply protocol**:
+with tab_assume:
+    col_text, col_viz = st.columns([2, 1])
+    with col_text:
+        st.markdown("### The 'Transportability' Leap")
+        st.info("""
+        **We assume that the 'Price of Bias' learned from the Free Market also applies to Rookies and Max Players.**
+        """)
+        st.markdown("""
+        * **What this means:** If the market pays a 5% premium for "Big Market Exposure" to a veteran free agent, we assume it *would* pay that same 5% premium to a Rookie if the Rookie Scale didn't exist.
+        * **The Risk:** It is possible that teams value attributes differently for 19-year-olds vs. 30-year-olds.
+        * **The Defense:** This is the only way to disentangle "Rule-based Salary" from "Market-based Salary." We could get around this by simply using free market players. But this is not as interesting.
+        """)
+    with col_viz:
+        st.caption("Visualizing the Leap")
+        st.markdown("""
+        `Free Market` -> **Learn** $\gamma$  
+        `Rookies` -> **Apply** $\gamma$
+        """)
 
-1. **Learn Phase** — study only free-market contracts to learn the true market prices of bias.  
-2. **Apply Phase** — take those learned prices and apply them to the *entire* league  
-   (including rookies and max players) to understand how the same forces *would* affect them  
-   under an open market.
+with tab_limit:
+    st.markdown("""
+    1.  **The "Free Market" is Small:** Only ~50% of the league negotiates freely in any given year. This reduces our sample size.
+    2.  **Performance Snapshots:** We use box-score stats (PER, Win Shares). We cannot measure "Locker Room Leadership" or "Jersey Sales Potential" directly, unless captured by our proxy variables (Age, Followers).
+    3.  **Dimensionality Loss:** squashing 10+ bias factors into a 3D map inevitably loses some information. The map is a *guide*, not a GPS.
+    """)
 
-This avoids contamination and gives us a cleaner picture of how the market values context.
+with tab_future:
+    st.markdown("""
+    * **Longitudinal Study:** Track how the "Geometry of Bias" changes over 10 years. Does the "Age Premium" shrink as the game gets faster?
+    * **Other Domains:** Apply this `DML + Unfolding` framework to **Real Estate** (Market Price vs. Zoning Laws) or **Tech Hiring** (Skills vs. Pedigree).
+    """)
 
----
+st.divider()
 
-### C. Turning coefficients into a structural map
-Coefficients alone cannot reveal deeper patterns.  
-We convert them into an **Attribution Matrix**, which measures:
+# --- 3. PRACTICAL IMPLICATIONS (Action Cards) ---
+st.header("3. So What? (The GM Decision Deck)")
+st.markdown("""
+How can a General Manager use this map to build a winning roster? 
+**Select a strategic objective below** to see how our model reveals specific market inefficiencies.
+""")
 
- How strongly each bias factor influences each player,
- all in the same unit — "unexplained salary influence."
-
-This lets us build a **Bias Map**, a geometric visualization that shows:
-
-- which bias factors cluster together,  
-- which players share similar structural forces,  
-- and where “pure performance” players sit (those whose salary is mostly explained by stats).  
-
----
-"""
+# The "Drop Down" Interaction
+gm_strategy = st.selectbox(
+    "🎯 Select a Strategic Goal:",
+    [
+        "Find Efficient 'Moneyball' Assets",
+        "Avoid 'Bad Contract' Traps",
+        "Exploit the 'Pedigree' Arbitrage"
+    ]
 )
 
+st.divider()
 
+# Dynamic Content based on selection
+if gm_strategy == "Find Efficient 'Moneyball' Assets":
+    col_icon, col_text = st.columns([1, 4])
+    with col_icon:
+        st.markdown("# 🎯")
+    with col_text:
+        st.subheader("Target: The 'Null Space'")
+        st.markdown("""
+        **The Insight:** Players located in the **geometric center** of our Bias Map (the "Null Space") are valued almost entirely on production, with near-zero structural distortion.
+        
+        **The GM Playbook:**
+        1.  Filter for players with a **Structural Bias Score near 0**.
+        2.  **Sign them.** These are "Pure Performance" assets. Every dollar you spend goes toward on-court production, not "Hype" or "Market Size."
+        """)
+        st.info("💡 **Why it works:** You avoid paying the 'Status Tax' that usually inflates the cost of stars.")
 
-# 2. Key assumptions (written for normal audience)
+elif gm_strategy == "Avoid 'Bad Contract' Traps":
+    col_icon, col_text = st.columns([1, 4])
+    with col_icon:
+        st.markdown("# 🚩")
+    with col_text:
+        st.subheader("Flag: High Structural Bias Scores")
+        st.markdown("""
+        **The Insight:** A high positive Bias Score means a player's salary is heavily propped up by factors *other* than winning basketball games (e.g., Age, Fame, Market Size).
+        
+        **The GM Playbook:**
+        1.  Before signing a veteran, check their **Age Premium** on our map.
+        2.  **Audit the cost:** Ask, *"Am I paying for future production, or am I paying a 'Legacy Tax' for what they did 5 years ago?"*
+        """)
+        st.warning("⚠️ **Risk Warning:** High structural scores often indicate 'Transient Factors' (like Hype) rather than sustainable value.")
 
-st.header("2. Core Assumptions")
+elif gm_strategy == "Exploit the 'Pedigree' Arbitrage":
+    col_icon, col_text = st.columns([1, 4])
+    with col_icon:
+        st.markdown("# 📉")
+    with col_text:
+        st.subheader("Target: The 'Draft Drag'")
+        st.markdown("""
+        **The Insight:** Our model quantifies a "Draft Drag" effect where late-round picks must perform significantly *better* than lottery picks just to earn the same market respect.
+        
+        **The GM Playbook:**
+        1.  Identify 2nd-Round picks who have "broken out" statistically.
+        2.  **Extension Target:** The market likely still prices them lower than a Top-5 pick with identical numbers. Sign them before the market corrects its bias.
+        """)
+        st.success("🚀 **The Arbitrage:** You get Lottery-level production at a 2nd-Round price point.")
 
-st.markdown(
-    """
-Our model is powerful, but relies on two important assumptions.
-
-### A. Transportability (the biggest assumption)
-We assume the prices of bias we learn from free-market contracts  
-also apply to players with fixed salaries (rookies, max players).
-
-This is necessary to avoid model errors,  
-but it assumes that teams value attributes like **draft pedigree** or **market size**  
-in a similar way across different contract types.
-
-In reality, fixed contracts behave differently —  
-so this assumption, while reasonable, should be used carefully.
-
----
-
-### B. Overlap in performance profiles
-When we apply our models to rookies or low-minute players,  
-their performance stats may look different from free-market veterans.
-
-If their stats fall outside the range of the training data,  
-the counterfactual predictions may be less accurate.
-
-This does **not break** the model,  
-but it means some players may have noisier bias estimates.
-
----
-"""
-)
-
-
-# 3. Limitations — written clearly and aligned with report
-
-st.header("3. Limitations")
-
-st.markdown(
-    """
-### A. Free-market data is limited  
-Only part of the league negotiates in the open market.  
-This reduces sample size and may increase noise.
-
-### B. Bias prices may shift year to year  
-The bias structure could change with the CBA, cap rules, or stylistic trends.
-
-### C. Performance snapshots can miss context  
-Our model uses available statistics,  
-but cannot capture leadership, injuries, off-court factors, or locker-room value.
-
-### D. Dimension reduction introduces uncertainty  
-The Bias Map intentionally represents each player and factor  
-as a **probability distribution**, not a single point.  
-This protects against overconfidence, but also means some placements are fuzzy.
-
-None of these limitations invalidate the insights —  
-they simply remind us to interpret the map as a **structured guide**,  
-not an absolute ranking.
-
----
-"""
-)
-
-
-# 4. Implications
-
-st.header("4. Impact and Implications")
-
-st.markdown(
-    """
-### Practical implications for real decision-makers
-
-- It becomes easy to spot **“pure performance” players** — those who land near the center of the Bias Map, where salaries are mostly explained by basketball performance rather than structural forces. 
-
-- It also highlights players who are shaped by **strong structural distortions**. 
-
-For **general managers**, this helps identify **market inefficiencies not just by size, but by type**:
-
-- Is a player’s valuation driven by sustainable performance?  
-- Or by transient factors like hype, big-market exposure, or the wealth of the ownership group?
-
-
-This makes the model valuable not only for analysts,  
-but also for **general managers, agents, and league decision-makers**  
-seeking a deeper understanding of fairness and inefficiency in the NBA contract ecosystem.
-"""
-)
-
+# --- 4. FINAL FOOTER ---
+st.markdown("### 🔗 Project Resources")
+col_github, col_paper = st.columns([1, 5])
+with col_github:
+    st.markdown("[**📂 GitHub Repository**](https://github.com/TylerVenner/Analysis-of-NBA-Contract-Valuation-Bias)") # Add your actual link if you want
+with col_paper:
+    st.caption("Developed by Group 5 for STA 160. University of California, Davis.")
