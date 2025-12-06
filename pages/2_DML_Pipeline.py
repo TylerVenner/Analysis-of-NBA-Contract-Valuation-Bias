@@ -3,7 +3,7 @@ import graphviz
 
 st.set_page_config(page_title="The Methodology", layout="wide")
 
-st.title("🛠️ The Engine: Stratified Double Machine Learning")
+st.title("The Engine: Stratified Double Machine Learning")
 st.subheader("How we isolated the signal from the noise.")
 
 # --- 1. THE PIPELINE VISUALIZATION (Hero Image) ---

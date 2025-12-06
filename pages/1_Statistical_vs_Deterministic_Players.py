@@ -63,7 +63,7 @@ with col_intro:
     """)
 
 with col_def:
-    st.markdown("### 🏛️ The Archetypes")
+    st.markdown("### The Archetypes")
     
     # helper to find example player
     def get_example(ctype, default):
@@ -198,7 +198,7 @@ st.markdown("---")
 col_thought_L, col_thought_R = st.columns([1, 1])
 
 with col_thought_L:
-    st.markdown("### 🧪 A Thought Experiment")
+    st.markdown("### A Thought Experiment")
     st.markdown("""
     **Victor Wembanyama** vs. **Stephen Curry**
     

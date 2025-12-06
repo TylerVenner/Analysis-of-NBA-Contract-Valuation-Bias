@@ -3,7 +3,7 @@ import streamlit as st
 st.set_page_config(page_title="Conclusion & Assumptions", page_icon="📘", layout="wide")
 
 # --- HERO SECTION ---
-st.title("📘 Conclusions & Future Directions")
+st.title("Conclusions & Future Directions")
 st.markdown("""
 **The Big Idea:** We moved from asking *"Does bias exist?"* to asking *"What is the **geometry** of bias?"*
 """)
