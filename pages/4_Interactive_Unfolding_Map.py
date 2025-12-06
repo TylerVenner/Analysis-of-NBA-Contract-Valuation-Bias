@@ -183,15 +183,6 @@ view_mode = st.sidebar.radio(
 
 # MAIN TITLE
 st.title("NBA Salary Bias Map")
-st.subheader("How Context Shapes Player Pay Beyond On-Court Performance")
-
-st.markdown("""
-This visualization shows how much a player’s salary is influenced by **contextual/bias factors** after controlling for on-court performance using Double Machine Learning (DML).
-
-The quantity displayed, *Bias Effect*, captures the portion of salary that comes from where a player plays, who owns the team, how visible they are, and how they entered the league, etc, not how well they perform on the court.
-""")
-
-st.markdown("---")
 
 st.subheader(" Latent Structure of Bias: Attribution Matrix → 3D Map")
 
@@ -270,14 +261,17 @@ else:
         components.html(string_data, height=900)
 
 
-
 st.markdown("---")
 
-st.caption("""
-Important: This map does **not** measure how good a player is.  
-It isolates the **non-performance portion of salary** driven by external context.
+st.subheader("How Context Shapes Player Pay Beyond On-Court Performance")
+
+st.markdown("""
+The following visualization shows how much a player’s salary is influenced by **contextual/bias factors** after controlling for on-court performance using Double Machine Learning (DML).
+
+The quantity displayed, *Bias Effect*, captures the portion of salary that comes from where a player plays, who owns the team, how visible they are, and how they entered the league, etc, not how well they perform on the court.
 """)
 
+st.markdown("---")
 
 st.markdown("""
 ### How to Read This Map
@@ -298,13 +292,11 @@ A **positive Bias Effect** means a player is being **paid more than their on-cou
 In these cases, **context is boosting salary**.
 
 Common contributing factors include:
-- Playing in a big-market city (e.g., New York, Los Angeles)
-- A wealthy team owner
-- High draft pedigree
-- Strong media presence or social media following
+- Higher draft round
+- Greater social-media following (marketability increases salary)
+- Older age (veteran reputation)
+- Lower team cap pressure (more budget to pay players)
 """)
-
-st.markdown("---")
 
 st.markdown("""
 ### What Does a Negative Bias Effect Mean?
@@ -313,11 +305,17 @@ A **negative Bias Effect** means a player is being **paid less than their perfor
 Here, **context is suppressing salary**.
 
 Common contributing factors include:
-- Playing in a small-market city
-- Being a late draft pick or undrafted
-- Limited media exposure
-- International background
-- A low-visibility role
+- Lower draft pick (late pick number or undrafted)
+- Fewer social-media followers (less marketability)
+- Younger age (less veteran leverage in negotiations)
+- High team cap pressure (team budget constraints push salaries down)
+""")
+
+st.markdown("---")
+
+st.caption("""
+Important: This map does **not** measure how good a player is.  
+It isolates the **non-performance portion of salary** driven by external context.
 """)
 
 # TEAM AGGREGATION
@@ -337,10 +335,15 @@ else:
     plot_df = df.copy()
     color_col = "Player_bias_effect"
 
+if view_mode == "Team Average":
+    df_map = plot_df # no sorting needed
+else:
+    df_map = plot_df.sort_values(by="Player_bias_effect") # ensure size aligns
+
 # CREATE MAP
 if view_mode == "Team Average":
     fig = px.scatter_mapbox(
-        plot_df,
+        df_map,
         lat="lat",
         lon="lon",
         color="Avg_Bias",
@@ -361,7 +364,7 @@ if view_mode == "Team Average":
     )
 else:
     fig = px.scatter_mapbox(
-        plot_df.sort_values(by="Player_bias_effect"),
+        df_map,
         lat="lat_jitter",
         lon="lon_jitter",
         color="Player_bias_effect",
@@ -382,20 +385,20 @@ else:
         size_max=30,
     )
 
+# DOT SIZE
 if size_by_salary:
     if view_mode == "Team Average":
-        fig.update_traces(marker=dict(
-            size=(plot_df["Avg_Salary"] / plot_df["Avg_Salary"].max()) * 40 + 10
-        ))
+        sizes = (df_map["Avg_Salary"] / df_map["Avg_Salary"].max()) * 40 + 10
     else:
-        fig.update_traces(marker=dict(
-            size=(plot_df["Salary"] / plot_df["Salary"].max()) * 30 + 6
-        ))
+        sizes = (df_map["Salary"] / df_map["Salary"].max()) * 30 + 6
 else:
     if view_mode == "Team Average":
-        fig.update_traces(marker=dict(size=20)) # slightly larger for teams
+        sizes = 20
     else:
-        fig.update_traces(marker=dict(size=10)) # players
+        sizes = 10
+
+for trace in fig.data:
+    trace.marker.size = sizes
 
 fig.update_layout(
     mapbox_style="carto-positron",
@@ -428,7 +431,6 @@ top_overpaid = display_df.sort_values(
     by="Player_bias_effect", ascending=False
 ).head(10)
 
-st.markdown("---")
 st.header("Most Overpaid & Underpaid Players")
 
 # Clean display dataframe
