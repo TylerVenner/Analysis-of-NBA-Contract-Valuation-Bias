@@ -1,54 +1,94 @@
 import streamlit as st
-import pandas as pd
+from pathlib import Path
+from PIL import Image
 
-
-
-# Set the page configuration
+# --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="NBA Contract Analysis",
+    page_title="NBA Economic Bias Mapper",
     page_icon="🏀",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-st.title("🏀 Analysis of NBA Contract Valuation")
+# --- 2. HEADER SECTION ---
+st.title("🏀 Mapping the Latent Structure of Economic Bias | NBA 2024-25")
 st.subheader("STA 160 Capstone Project - Group 5")
+st.markdown("**University of California, Davis**")
 
+# Team Credits
+col_team1, col_team2, col_team3, col_team4, col_team5 = st.columns(5)
+col_team1.markdown("**Tyler Venner**")
+col_team2.markdown("**Macy Chen**")
+col_team3.markdown("**Leonel Garibay-Estrada**")
+col_team4.markdown("**Jiarui Hou**")
+col_team5.markdown("**Alberto Ramirez**")
+
+st.divider()
+
+# --- 3. THE HOOK (HERO SECTION) ---
+# We try to load a hero image. If not found, we skip it gracefully.
+HERO_IMAGE_PATH = Path("data/app_data/landing_image.png") # User needs to add this!
+
+col_text, col_img = st.columns([1.5, 1])
+
+with col_text:
+    st.markdown("### The Research Question")
+    st.info("""
+    **What does economic bias *look like* when you map it?**
+    
+    Traditional sports analytics can tell us *that* bias exists—that veterans get paid more, or that market size matters. 
+    But they can't tell us the **geometry** of that bias.
+    
+    Our project uses **Double Machine Learning (DML)** and **Latent Space Mapping** to uncover the hidden "neighborhoods" 
+    of the NBA economy, revealing which players are valued for their stats, and which are defined by hype, 
+    draft pedigree, or market structure.
+    """)
+
+with col_img:
+    if HERO_IMAGE_PATH.exists():
+        image = Image.open(HERO_IMAGE_PATH)
+        st.image(image, caption="The Topology of NBA Salaries (3D Output)", use_container_width=True)
+
+# --- 4. CONTEXT & SOLUTION (Two Column Layout) ---
+st.markdown("---")
+
+c1, c2 = st.columns(2)
+
+with c1:
+    st.markdown("### The Problem: A Wall of Coefficients")
+    st.markdown("""
+    Econometric analysis often ends with a static table of coefficients. 
+    While statistically correct, this approach fails to reveal the **system**.
+    
+    * It doesn't show how biases cluster together.
+    * It struggles with **"Deterministic Contracts"** (Rookies/Max deals) that defy free-market logic.
+    * It leaves decision-makers guessing about *why* a specific player is an outlier.
+    """)
+
+with c2:
+    st.markdown("### Our Solution: A Geometric Map")
+    st.markdown("""
+    We developed a **Stratified Learn-Apply Protocol**:
+    
+    1.  **Isolate the Signal:** We learn "fair market value" *only* from free-market contracts.
+    2.  **Calculate the Distortion:** We apply those prices to the whole league to find "Structural Bias".
+    3.  **Map the Space:** We treat bias as a geometric force, clustering players who are affected by the same hidden factors.
+    """)
+
+# --- 5. NAVIGATION GUIDE ---
+st.markdown("---")
+st.subheader("How to Explore This App")
 
 st.markdown("""
-##  Research Question
-How can we move beyond traditional sports analytics to reveal the hidden patterns that shape how athletes are valued? Our project asks a simple but powerful question:  
-**What does economic bias *look like* when you map it, and what hidden forces shape the way NBA players are paid?**
+Use the sidebar to navigate our analysis pipeline:
 
-While salary data is public, the forces behind those numbers—hype, age, draft narratives, market size—are rarely visible. We set out to uncover whether these influences form identifiable structures, clusters, or “bias neighborhoods” inside the NBA economy.
-
----
-
-##  Context
-Sports analysts and economists often rely on charts, tables, and regression outputs to study discrimination and market inefficiency. But these tools can only tell us *which* factors matter—not how those factors relate to each other, or how they collectively shape real player careers.
-
-NBA salaries add an extra layer of difficulty: many players earn “fixed” rookie or max contracts that have nothing to do with free-market value. This makes it nearly impossible to understand true economic bias using standard models.
-
-Our team wanted a better way to see the full picture—not just the numbers, but the underlying *structure*.
-
----
-
-##  Discussion & Why This Matters
-Our project introduces a new way to visualize how bias operates in professional sports. Instead of ending with a wall of coefficients, we build an interactive **Bias Map** that uncovers clusters of players affected by the same underlying forces—whether that’s age, hype, market size, or draft history.
-
-Early results already show striking patterns: a clear “rookie cluster,” a defined “aging-star zone,” and even a central region where players appear to be valued almost entirely on performance. By turning complex analytics into an intuitive map, our work gives fans, analysts, and decision-makers a new lens for understanding fairness, value, and hidden inefficiencies in the NBA.
-
-**We invite you to explore our preliminary visualizations below and see how economic bias takes shape when you give it a geometry.**
+1.  **Statistical vs. Deterministic Players:** *See why we can't just run a simple regression on the whole NBA. We visualize the structural "walls" of Rookie Scale and Max contracts.*
+    
+2.  **The DML Pipeline:** *A high-level overview of our "Learn-Apply" methodology. How we filter the noise to find the signal.*
+    
+3.  **DML Results (The Prices):** *The "Shadow Prices" of bias. Exactly how much is a #1 Draft Pick worth in salary years later? What is the "Veteran Premium"?*
+    
+4.  **The Interactive Maps:** *The core of our project. Explore the **3D Topology** of bias and the **Geographic Map** of structural winners and losers.*
+    
+5.  **Assumptions & Conclusion:** *Limitations, implications for General Managers, and final thoughts.*
 """)
-
-""" 
-            
-### How to Use This App
-Use the sidebar on the left to navigate between the different sections of our analysis:
-- **Home:** You are here.
-- **Data Overview:** (Example Page) A look at the raw data we collected.
-- **Model Results:** (Example Page) The final output from our DML model.
-- **[Teammate Pages]:** Explorations and specific analyses from each team member.
-
----
-"""

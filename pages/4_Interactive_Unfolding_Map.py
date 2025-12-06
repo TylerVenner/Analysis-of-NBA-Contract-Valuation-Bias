@@ -4,478 +4,213 @@ import numpy as np
 import plotly.express as px
 import streamlit.components.v1 as components
 import os
-import glob
 from pathlib import Path
+from datetime import datetime
 
-DATA_PATH = "data/processed/master_dataset_advanced_v2.csv"
+# --- 1. SETUP & CONFIG ---
+st.set_page_config(layout="wide", page_title="Interactive Bias Map")
 
+MAP_HTML_PATH = Path("data/app_data/final_3d_map.html")
+PLAYER_PATH = Path("data/app_data/player_db.csv")
+COEF_PATH = Path("data/app_data/final_ols_coefficients.csv")
 
+# --- 2. DATA LOADING & PREP ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv(DATA_PATH)
-    return df
+    if not PLAYER_PATH.exists() or not COEF_PATH.exists():
+        st.error("⚠️ Data missing. Run `prepare_deployment_data.py` locally.")
+        st.stop()
 
+    # Load Players
+    df = pd.read_csv(PLAYER_PATH)
+    
+    # Load Coefficients
+    df_coef = pd.read_csv(COEF_PATH)
+    rename_map = {"Gamma (Price)": "coef", "P-Value": "p_value", "std_err": "std_err", "coef": "coef"}
+    df_coef = df_coef.rename(columns=rename_map)
+    
+    # Set index
+    if "Variable" in df_coef.columns:
+        df_coef = df_coef.set_index("Variable")
+    elif "Unnamed: 0" in df_coef.columns:
+        df_coef = df_coef.set_index("Unnamed: 0")
+
+    # --- CALCULATE STRUCTURAL BIAS SCORE ---
+    df["Calculated_Bias_Score"] = 0.0
+    
+    # Factors to include in the "Structural" score
+    z_cols = ["Age", "DRAFT_NUMBER", "OWNER_NET_WORTH_B", "Capacity", "Followers", "is_USA"]
+    
+    for col in z_cols:
+        if col in df.columns and col in df_coef.index:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+            gamma = df_coef.loc[col, "coef"]
+            # Accumulate Log-Dollar Impact
+            df["Calculated_Bias_Score"] += df[col] * gamma
+
+    # --- CRITICAL FIX: CENTER THE SCORE ---
+    # We subtract the median so 0 represents the "Average Player".
+    # Positive = Premium relative to average. Negative = Penalty relative to average.
+    median_bias = df["Calculated_Bias_Score"].median()
+    df["Calculated_Bias_Score"] -= median_bias
+
+    return df
 
 df = load_data()
 
+# --- 3. HEADER & TIMESTAMP ---
+st.title("🗺️ The Topology of Bias")
 
-# --- Helper Functions ---
-def get_latest_bias_map_path(base_dir="reports/maps"):
-    """
-    Finds the most recently generated bias map HTML file.
-    Assumes structure: reports/maps/run_{timestamp}/bias_attribution_map_3d.html
-    """
-    # Search for all html files matching the pattern
-    # Adjust 'reports/maps' relative to where you run 'streamlit run app.py'
-    # If app.py is in root, use 'reports/maps'. If in src, use '../reports/maps'
+# [cite_start]Get timestamp of the map file to verify freshness [cite: 53]
+if MAP_HTML_PATH.exists():
+    mod_time = datetime.fromtimestamp(MAP_HTML_PATH.stat().st_mtime)
+    st.caption(f"Analysis Snapshot Generated: {mod_time.strftime('%Y-%m-%d %H:%M')}")
 
-    # Let's try to be robust and look relative to this script file
-    current_dir = Path(__file__).parent.resolve()
-
-    # Check if we are in 'src' or root. Assuming reports is in root.
-    # Adjust this path if your folder structure is different!
-    project_root = current_dir  # Modify this based on where app.py lives vs reports
-
-    # Example: If app.py is in project root
-    search_pattern = os.path.join("reports", "maps", "run_*", "bias_attribution_map_3d.html")
-
-    files = glob.glob(search_pattern)
-
-    if not files:
-        # Try searching one level up if not found (in case app.py is in a subfolder)
-        search_pattern = os.path.join("..", "reports", "maps", "run_*", "bias_attribution_map_3d.html")
-        files = glob.glob(search_pattern)
-
-    if not files:
-        return None
-
-    # Get the latest file based on creation time or name (timestamp in name ensures sort order)
-    latest_file = max(files, key=os.path.getctime)
-    return latest_file
-
-
-def render_interactive_map(file_path):
-    """Reads an HTML file and renders it as a Streamlit component."""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+# --- 4. THE 3D ATTRIBUTION MAP ---
+with st.expander("💎 Expand 3D Topology Map", expanded=True):
+    st.markdown("""
+    This map is the main output. Feel free to find your favorite player and examine the structural bias.
+                
+    **How to use the map:**
+    * Click and hold, and move your mouse to fly around the map
+    * Use your scroll wheel to zoom in and out
+    * Hover over dots to see individual players
+                
+    **How to read the map:**
+    * **Clusters:** Players are pulled towards the factors that determine their salary.
+    * **"The Void":** Players in the empty center are paid based on pure performance (no structural bias).
+    """)
+    if MAP_HTML_PATH.exists():
+        with open(MAP_HTML_PATH, 'r', encoding='utf-8') as f:
             html_content = f.read()
-
-        # Height should match the height set in visualizer.py (900px)
-        components.html(html_content, height=900, scrolling=False)
-        st.success(f"Loaded map from: `{file_path}`")
-    except Exception as e:
-        st.error(f"Error loading map: {e}")
-
-
-# STREAMLIT CONFIG
-st.set_page_config(
-    page_title="NBA Salary Bias Map",
-    layout="wide"
-)
-
-# DATA LOADING
-DATA_PATH = "data/processed/streamlit_bias_map.csv"
-
-def load_data():
-    df = pd.read_csv(DATA_PATH)
-    return df
-
-df = load_data()
-
-# REQUIRED COLUMNS CHECK
-REQUIRED_COLS = [
-    "PLAYER_NAME",
-    "City",
-    "Salary",
-    "Player_bias_effect",
-    "TEAM_NAME",
-    "Age",
-    "YOS"
-]
-
-missing = [c for c in REQUIRED_COLS if c not in df.columns]
-if missing:
-    st.error(f"Missing required columns: {missing}")
-    st.stop()
-
-df.columns = df.columns.str.strip()
-df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
-df["Age"] = pd.to_numeric(df["Age"], errors="coerce")
-df["YOS"] = pd.to_numeric(df["YOS"], errors="coerce")
-df["Player_bias_effect"] = pd.to_numeric(df["Player_bias_effect"], errors="coerce")
-
-# CITY TO LAT / LON
-CITY_COORDS = {
-    "Atlanta, GA": (33.7490, -84.3880),
-    "Boston, MA": (42.3601, -71.0589),
-    "Brooklyn, NY": (40.6782, -73.9442),
-    "Charlotte, NC": (35.2271, -80.8431),
-    "Chicago, IL": (41.8781, -87.6298),
-    "Cleveland, OH": (41.4993, -81.6944),
-    "Dallas, TX": (32.7767, -96.7970),
-    "Denver, CO": (39.7392, -104.9903),
-    "Detroit, MI": (42.3314, -83.0458),
-    "Houston, TX": (29.7604, -95.3698),
-    "Indianapolis, IN": (39.7684, -86.1581),
-    "Los Angeles, CA": (34.0430, -118.2673),
-    "Inglewood, CA": (33.9618, -118.3534),
-    "Memphis, TN": (35.1495, -90.0490),
-    "Miami, FL": (25.7617, -80.1918),
-    "Milwaukee, WI": (43.0389, -87.9065),
-    "Minneapolis, MN": (44.9778, -93.2650),
-    "New Orleans, LA": (29.9511, -90.0715),
-    "New York, NY": (40.7505, -73.9934),
-    "Oklahoma City, OK": (35.4676, -97.5164),
-    "Orlando, FL": (28.5383, -81.3792),
-    "Philadelphia, PA": (39.9526, -75.1652),
-    "Phoenix, AZ": (33.4484, -112.0740),
-    "Portland, OR": (45.5051, -122.6750),
-    "Sacramento, CA": (38.5816, -121.4944),
-    "San Antonio, TX": (29.4241, -98.4936),
-    "San Francisco, CA": (37.7680, -122.3877),
-    "Toronto, ON": (43.6532, -79.3832),
-    "Salt Lake City, UT": (40.7608, -111.8910),
-    "Washington, D.C.": (38.9072, -77.0369)
-}
-
-df["lat"] = df["City"].map(lambda x: CITY_COORDS.get(x, (None, None))[0])
-df["lon"] = df["City"].map(lambda x: CITY_COORDS.get(x, (None, None))[1])
-
-# JITTER FOR PLAYER VIEW
-np.random.seed(13)
-
-jitter_scale = 0.18
-df["lat_jitter"] = df["lat"] + np.random.normal(0, 0.08, len(df))
-df["lon_jitter"] = df["lon"] + np.random.normal(0, 0.08, len(df))
-
-# SIDEBAR FILTERS
-st.sidebar.header("Filters")
-
-min_salary, max_salary = st.sidebar.slider(
-    "Salary Range",
-    int(df["Salary"].min()),
-    int(df["Salary"].max()),
-    (int(df["Salary"].min()), int(df["Salary"].max()))
-)
-
-min_age, max_age = st.sidebar.slider(
-    "Age Range",
-    int(df["Age"].min()),
-    int(df["Age"].max()),
-    (int(df["Age"].min()), int(df["Age"].max()))
-)
-
-size_by_salary = st.sidebar.toggle(
-    "Scale dot size by Salary",
-    value=False
-)
-
-df = df[
-    (df["Salary"] >= min_salary) &
-    (df["Salary"] <= max_salary) &
-    (df["Age"] >= min_age) &
-    (df["Age"] <= max_age)
-]
-view_mode = st.sidebar.radio(
-    "Map View",
-    ["Team Average", "Individual Players"]
-)
-
-# MAIN TITLE
-st.title("NBA Salary Bias Map")
-
-st.subheader(" Latent Structure of Bias: Attribution Matrix → 3D Map")
-
-st.markdown("""
-### Understanding the Attribution Matrix
-
-Before we can visualize bias, we first translate our Double Machine Learning (DML) results into an **attribution matrix**.
-
-This matrix does two things:
-
-1. **Bias Factor Loadings (L̂ᵢⱼ)**  
-   For each player *i* and each bias factor *j*, we compute how “unusual” the player is on that factor **after controlling for their basketball performance**.  
-   - High (positive or negative) values of L̂ᵢⱼ mean a player stands out on that bias factor.  
-   - Low values mean they are typical on that dimension.
-
-2. **Market Prices of Bias (γ̂ⱼ)**  
-   For each bias factor, we estimate how much that factor “costs” in the contract market—how many dollars of salary movement are associated with that bias.
-
-The attribution matrix is therefore a high-dimensional representation of the contract market:
-- **Rows = Players**  
-- **Columns = Bias Factors**  
-- **Cells = Player-specific bias exposures**
-
-In this space, every player becomes a point defined by their L̂ᵢⱼ values.
-
----
-
-### Why a 3D Map?
-
-The attribution matrix is too high-dimensional to interpret directly.  
-To make the structure visible, we compress it using a dimensionality-reduction method that preserves:
-
-- similarities between players,  
-- similarities between bias factors,  
-- and the overall geometry of the “bias landscape.”
-
-The result is a **3D latent map** that reveals how economic forces shape NBA contracts.
-
----
-
-### How to Read the Map
-
-- **Diamonds = Bias Factors (Anchors)**  
-  These are the visual representations of the columns of the attribution matrix. Their placement summarizes where each bias factor lies in the latent space.
-
-- **Dots = Players**  
-  Each dot is a player, positioned based on their entire bias profile (their row in the attribution matrix).
-
-- **Proximity = Shared Bias Exposure**  
-  Players near each other experience similar combinations of bias factors.  
-  Players near a diamond are strongly influenced by that specific bias.
-
-- **Color = Contract Type**  
-  This helps reveal whether certain contract structures systematically fall into specific regions of the bias space.
-
-In essence, this map creates a **geography of contract bias**—a visual landscape where players cluster around the economic forces that shape their pay.
-
----
-
-### Interactive 3D Map
-""")
-
-# Automatically find and load the latest map
-latest_map_path = get_latest_bias_map_path()
-
-if latest_map_path and os.path.exists(latest_map_path):
-    render_interactive_map(latest_map_path)
-else:
-    st.warning("No generated bias map found. Please run `src/scripts/run_bias_mapping.py` first.")
-
-    # Fallback: Manual Upload
-    st.write("Or upload a map HTML file manually:")
-    uploaded_file = st.file_uploader("Choose an HTML file", type="html")
-    if uploaded_file is not None:
-        string_data = uploaded_file.getvalue().decode("utf-8")
-        components.html(string_data, height=900)
-
-
-st.markdown("---")
-
-st.subheader("How Context Shapes Player Pay Beyond On-Court Performance")
-
-st.markdown("""
-The following visualization shows how much a player’s salary is influenced by **contextual/bias factors** after controlling for on-court performance using Double Machine Learning (DML).
-
-The quantity displayed, *Bias Effect*, captures the portion of salary that comes from where a player plays, who owns the team, how visible they are, and how they entered the league, etc, not how well they perform on the court.
-""")
-
-st.markdown("---")
-
-st.markdown("""
-### How to Read This Map
-
-Each dot represents a player located at their team’s city.
-
-- **Red** → Player is **paid more than expected** after controlling for performance. 
-- **Blue** → Player is **paid less than expected** after controlling for performance. 
-- **White / Neutral** → Salary closely matches expected value.
-""")
-
-st.markdown("---")
-
-st.markdown("""
-### What Does a Positive Bias Effect Mean?
-
-A **positive Bias Effect** means a player is being **paid more than their on-court performance alone would predict**.  
-In these cases, **context is boosting salary**.
-
-Common contributing factors include:
-- Higher draft round
-- Greater social-media following (marketability increases salary)
-- Older age (veteran reputation)
-- Lower team cap pressure (more budget to pay players)
-""")
-
-st.markdown("""
-### What Does a Negative Bias Effect Mean?
-
-A **negative Bias Effect** means a player is being **paid less than their performance alone would predict**.  
-Here, **context is suppressing salary**.
-
-Common contributing factors include:
-- Lower draft pick (late pick number or undrafted)
-- Fewer social-media followers (less marketability)
-- Younger age (less veteran leverage in negotiations)
-- High team cap pressure (team budget constraints push salaries down)
-""")
-
-st.markdown("---")
-
-st.caption("""
-Important: This map does **not** measure how good a player is.  
-It isolates the **non-performance portion of salary** driven by external context.
-""")
-
-# TEAM AGGREGATION
-team_df = df.groupby(
-    ["TEAM_NAME", "City", "lat", "lon"], as_index=False
-).agg(
-    Avg_Bias=("Player_bias_effect", "mean"),
-    Avg_Salary=("Salary", "mean"),
-    Player_Count=("PLAYER_NAME", "count")
-)
-
-# COLOR SETTING
-if view_mode == "Team Average":
-    plot_df = team_df.copy()
-    color_col = "Avg_Bias"
-else:
-    plot_df = df.copy()
-    color_col = "Player_bias_effect"
-
-if view_mode == "Team Average":
-    df_map = plot_df # no sorting needed
-else:
-    df_map = plot_df.sort_values(by="Player_bias_effect") # ensure size aligns
-
-# CREATE MAP
-if view_mode == "Team Average":
-    fig = px.scatter_mapbox(
-        df_map,
-        lat="lat",
-        lon="lon",
-        color="Avg_Bias",
-        hover_name="TEAM_NAME",
-        hover_data={
-            "City": True,
-            "Player_Count": True,
-            "Avg_Salary": ":,.0f",
-            "Avg_Bias": ":.3f",
-            "lat": False,
-            "lon": False
-        },
-        zoom=3,
-        height=720,
-        color_continuous_scale="RdBu_r",
-        color_continuous_midpoint=0,
-        size_max=50,
-    )
-else:
-    fig = px.scatter_mapbox(
-        df_map,
-        lat="lat_jitter",
-        lon="lon_jitter",
-        color="Player_bias_effect",
-        hover_name="PLAYER_NAME",
-        hover_data={
-            "TEAM_NAME": True,
-            "Age": ":.0f",
-            "Salary": ":,.0f",
-            "YOS": True,
-            "Player_bias_effect": ":.3f",
-            "lat_jitter": False,
-            "lon_jitter": False
-        },
-        zoom=3,
-        height=720,
-        color_continuous_scale="RdBu_r",
-        color_continuous_midpoint=0,
-        size_max=30,
-    )
-
-# DOT SIZE
-if size_by_salary:
-    if view_mode == "Team Average":
-        sizes = (df_map["Avg_Salary"] / df_map["Avg_Salary"].max()) * 40 + 10
+        components.html(html_content, height=800, scrolling=False)
     else:
-        sizes = (df_map["Salary"] / df_map["Salary"].max()) * 30 + 6
-else:
-    if view_mode == "Team Average":
-        sizes = 20
+        st.warning("⚠️ 3D Map HTML not found.")
+
+st.divider()
+
+# --- 5. GEOGRAPHIC BIAS MAP ---
+st.header("Geographic Analysis: The 'Overpaid' vs 'Underpaid'")
+
+col_map, col_context = st.columns([3, 1])
+
+with col_context:
+    st.info("""
+    **What is the Bias Score?**
+    
+    It measures the **Relative Structural Advantage** compared to the league median.
+    
+    * **🔴 Red (> 0):** Structural Premium. This player benefits more from context (Age, Fame) than the average player.
+    * **🔵 Blue (< 0):** Structural Penalty. This player faces more headwinds (Draft, Small Market) than average.
+    * **⚪ White (~ 0):** Neutral.
+    """)
+    
+    # Filters
+    st.subheader("Filters")
+    if "Salary" in df.columns:
+        df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce").fillna(0)
+        min_sal, max_sal = int(df["Salary"].min()), int(df["Salary"].max())
+        salary_range = st.slider("Salary ($)", min_sal, max_sal, (min_sal, max_sal), format="$%d")
+        df_filtered = df[(df["Salary"] >= salary_range[0]) & (df["Salary"] <= salary_range[1])]
     else:
-        sizes = 10
+        df_filtered = df
 
-for trace in fig.data:
-    trace.marker.size = sizes
+    view_mode = st.radio("View Mode", ["Team Average", "Individual Players"])
 
-fig.update_layout(
-    mapbox_style="carto-positron",
-    margin={"r": 0, "t": 0, "l": 0, "b": 0},
+with col_map:
+    # --- MAP LOGIC ---
+    CITY_COORDS = {
+        "Atlanta": (33.7, -84.3), "Boston": (42.3, -71.0), "Brooklyn": (40.6, -73.9), "Charlotte": (35.2, -80.8),
+        "Chicago": (41.8, -87.6), "Cleveland": (41.4, -81.6), "Dallas": (32.7, -96.7), "Denver": (39.7, -104.9),
+        "Detroit": (42.3, -83.0), "Houston": (29.7, -95.3), "Indiana": (39.7, -86.1), "Los Angeles": (34.0, -118.2),
+        "Memphis": (35.1, -90.0), "Miami": (25.7, -80.1), "Milwaukee": (43.0, -87.9), "Minnesota": (44.9, -93.2),
+        "New Orleans": (29.9, -90.0), "New York": (40.7, -73.9), "Oklahoma City": (35.4, -97.5), "Orlando": (28.5, -81.3),
+        "Philadelphia": (39.9, -75.1), "Phoenix": (33.4, -112.0), "Portland": (45.5, -122.6), "Sacramento": (38.5, -121.4),
+        "San Antonio": (29.4, -98.4), "Golden State": (37.7, -122.4), "Toronto": (43.6, -79.3), "Utah": (40.7, -111.8),
+        "Washington": (38.9, -77.0)
+    }
+
+    def get_coords(team_name):
+        if not isinstance(team_name, str): return (39.8, -98.5)
+        for city, coords in CITY_COORDS.items():
+            if city in team_name: return coords
+        return (39.8, -98.5)
+
+    if "lat" not in df_filtered.columns:
+        df_filtered["lat"] = df_filtered["TEAM_NAME"].apply(lambda x: get_coords(x)[0])
+        df_filtered["lon"] = df_filtered["TEAM_NAME"].apply(lambda x: get_coords(x)[1])
+
+    if view_mode == "Individual Players":
+        # Add Jitter
+        df_filtered["lat_j"] = df_filtered["lat"] + np.random.normal(0, 0.15, len(df_filtered))
+        df_filtered["lon_j"] = df_filtered["lon"] + np.random.normal(0, 0.15, len(df_filtered))
+        
+        fig = px.scatter_mapbox(
+            df_filtered, lat="lat_j", lon="lon_j", color="Calculated_Bias_Score",
+            hover_name="PLAYER_NAME", hover_data=["TEAM_NAME", "Salary"],
+            # Fixed Color Scale: Red=Premium, Blue=Penalty, White=0
+            color_continuous_scale="RdBu_r", 
+            color_continuous_midpoint=0,
+            zoom=3, height=600, size_max=15, title="Individual Structural Bias"
+        )
+    else:
+        # Aggregate by Team
+        team_df = df_filtered.groupby(["TEAM_NAME", "lat", "lon"]).agg({
+            "Calculated_Bias_Score": "mean", "Salary": "mean", "Age": "mean", 
+            "DRAFT_NUMBER": "mean", "PLAYER_NAME": "count"
+        }).reset_index()
+        
+        fig = px.scatter_mapbox(
+            team_df, lat="lat", lon="lon", color="Calculated_Bias_Score", size="Salary",
+            hover_name="TEAM_NAME", 
+            hover_data={"Calculated_Bias_Score":":.2f", "Age":":.1f", "DRAFT_NUMBER":":.1f"},
+            color_continuous_scale="RdBu_r", 
+            color_continuous_midpoint=0,
+            zoom=3, height=600, title="Average Team Structural Bias"
+        )
+
+    fig.update_layout(mapbox_style="carto-positron", margin={"r":0,"t":40,"l":0,"b":0})
+    st.plotly_chart(fig, use_container_width=True)
+
+# --- 6. VISUAL LEADERBOARD ---
+st.header("Structural Leaderboard")
+
+# Prepare Data for Display
+display_cols = ["PLAYER_NAME", "TEAM_NAME", "Calculated_Bias_Score", "Age", "DRAFT_NUMBER"]
+leader_df = df_filtered[display_cols].copy()
+leader_df = leader_df.rename(columns={"Calculated_Bias_Score": "Bias Score", "DRAFT_NUMBER": "Draft Pick"})
+
+col_win, col_loss = st.columns(2)
+
+# Common Column Configuration for the Bar Chart visual
+bias_col_config = st.column_config.ProgressColumn(
+    "Structural Impact",
+    help="Red = Premium, Blue = Penalty",
+    format="%.2f",
+    min_value=-1.5, # Approximate range after centering
+    max_value=1.5,
 )
 
-st.plotly_chart(fig, use_container_width=True)
-
-st.markdown("---")
-
-# Clean display dataframe
-display_cols = [
-    "PLAYER_NAME",
-    "TEAM_NAME",
-    "City",
-    "Salary",
-    "Player_bias_effect",
-    "Age",
-    "YOS"
-]
-
-display_df = df[display_cols].copy()
-
-# Formatting
-display_df["Salary"] = display_df["Salary"].map("${:,.0f}".format)
-display_df["Player_bias_effect"] = display_df["Player_bias_effect"].round(4)
-
-# Top 10 Overpaid
-top_overpaid = display_df.sort_values(
-    by="Player_bias_effect", ascending=False
-).head(10)
-
-st.header("Most Overpaid & Underpaid Players")
-
-# Clean display dataframe
-display_cols = [
-    "PLAYER_NAME",
-    "TEAM_NAME",
-    "City",
-    "Salary",
-    "Player_bias_effect",
-    "Age",
-    "YOS"
-]
-
-display_df = df[display_cols].copy()
-
-# Formatting
-display_df["Salary"] = display_df["Salary"].map("${:,.0f}".format)
-display_df["Player_bias_effect"] = display_df["Player_bias_effect"].round(4)
-
-# Top 10 Overpaid
-top_overpaid = display_df.sort_values(
-    by="Player_bias_effect", ascending=False
-).head(10)
-
-# Top 10 Underpaid
-top_underpaid = display_df.sort_values(
-    by="Player_bias_effect", ascending=True
-).head(10)
-
-# Display side-by-side
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("Top 10 Most Overpaid")
+with col_win:
+    st.markdown("#### Top Structural Premiums")
+    st.caption("These players benefit most from Age, Fame, and Market Size.")
+    top_df = leader_df.sort_values("Bias Score", ascending=False).head(10)
+    
     st.dataframe(
-        top_overpaid,
-        use_container_width=True,
-        hide_index=True
+        top_df,
+        column_config={"Bias Score": bias_col_config},
+        hide_index=True,
+        use_container_width=True
     )
 
-with col2:
-    st.subheader("Top 10 Most Underpaid")
+with col_loss:
+    st.markdown("#### Top Structural Penalties")
+    st.caption("These players are dragged down by Youth, Draft History, or Small Markets.")
+    bot_df = leader_df.sort_values("Bias Score", ascending=True).head(10)
+    
     st.dataframe(
-        top_underpaid,
-        use_container_width=True,
-        hide_index=True
+        bot_df,
+        column_config={"Bias Score": bias_col_config},
+        hide_index=True,
+        use_container_width=True
     )
-
