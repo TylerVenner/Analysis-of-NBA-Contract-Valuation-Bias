@@ -1,1 +1,7 @@
-graphviz
+
+1. need actual research question
+2. mentioned deterministic players governed by ticket salce. not true (slide 2)
+3. slide 6
+4. slide 13. did mention transportability assumption?
+5. gary did something before slide 13. what?
+6. is slide 14 needed? we will go over this on website.

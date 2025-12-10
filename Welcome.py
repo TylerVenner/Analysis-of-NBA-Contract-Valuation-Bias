@@ -28,6 +28,18 @@ st.divider()
 # --- 3. THE HOOK (HERO SECTION) ---
 # We try to load a hero image. If not found, we skip it gracefully.
 HERO_IMAGE_PATH = Path("data/app_data/landing_image.png") # User needs to add this!
+DEMO_VIDEO_URL = "https://youtu.be/_f_-KkOnSrY"
+
+# --- 3. VIDEO DEMO (Top of Page) ---
+if DEMO_VIDEO_URL:
+    st.markdown("### Project Presentation")
+    # Centered video player
+    _, col_vid, _ = st.columns([1, 2, 1])
+    with col_vid:
+        st.video(DEMO_VIDEO_URL)
+    
+
+st.divider()
 
 col_text, col_img = st.columns([1.5, 1])
 
@@ -50,7 +62,6 @@ with col_img:
         st.image(image, caption="The Topology of NBA Salaries (3D Output)", use_container_width=True)
 
 # --- 4. CONTEXT & SOLUTION (Two Column Layout) ---
-st.markdown("---")
 
 c1, c2 = st.columns(2)
 
