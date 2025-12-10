@@ -125,9 +125,9 @@ with col_map:
         "Detroit": (42.3, -83.0), "Houston": (29.7, -95.3), "Indiana": (39.7, -86.1), "Los Angeles": (34.0, -118.2),
         "Memphis": (35.1, -90.0), "Miami": (25.7, -80.1), "Milwaukee": (43.0, -87.9), "Minnesota": (44.9, -93.2),
         "New Orleans": (29.9, -90.0), "New York": (40.7, -73.9), "Oklahoma City": (35.4, -97.5), "Orlando": (28.5, -81.3),
-        "Philadelphia": (39.9, -75.1), "Phoenix": (33.4, -112.0), "Portland": (45.5, -122.6), "Sacramento": (38.5, -121.4),
+        "Philidelphia": (39.9, -75.1), "Pheonix": (33.4, -112.0), "Portland": (45.5, -122.6), "Sacramento": (38.5, -121.4),
         "San Antonio": (29.4, -98.4), "Golden State": (37.7, -122.4), "Toronto": (43.6, -79.3), "Utah": (40.7, -111.8),
-        "Washington": (38.9, -77.0)
+        "Washington": (38.9, -77.0), "LA": (34.0, -118.2)
     }
 
     def get_coords(team_name):
