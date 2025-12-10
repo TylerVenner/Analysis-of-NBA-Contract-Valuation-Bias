@@ -2,7 +2,7 @@
 
 **A DML-Unfolding Fusion Framework** *STA 160 Capstone Project | University of California, Davis*
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](INSERT_YOUR_STREAMLIT_LINK_HERE)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://basketbias.streamlit.app/)
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![JAX](https://img.shields.io/badge/JAX-Accelerated-9cf)
 
