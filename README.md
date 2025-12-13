@@ -17,7 +17,7 @@ Traditional sports analytics often ends with a "wall of coefficients"—static t
 2.  **Learn:** We learn the true price of bias (Age, Market Size, Hype) *only* from negotiated contracts.
 3.  **Map:** We project these economic forces into a 3D topology, revealing the hidden "neighborhoods" of player valuation.
 
-👉 **[Explore the Interactive Map](INSERT_YOUR_STREAMLIT_LINK_HERE)**
+👉 **[Explore the Interactive Map](https://basketbias.streamlit.app/)**
 
 ---
 
